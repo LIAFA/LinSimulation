@@ -3,15 +3,16 @@
 
 A dual notion of forward simulation is the backward simulation:
 \begin{dfn}
-Let $L_1=(Q_1,\Sigma, q_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, q_0^2, \delta_2)$ be two libraries over a common alphabet $\Sigma$. A relation $bs \subseteq Q_1 \times Q_2$ is called a \emph{backward simulation} from $L_1$ to $L_2$ iff the following holds:
+Let $L_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, s_0^2, \delta_2)$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$. A relation $bs \subseteq Q_1 \times Q_2$ is called a \emph{backward simulation} from $L_1$ to $L_2$ iff the following holds:
 \begin{itemize}
-\item[(i)] $bs[q_0^1] = \{q_0^2 \}$
+\item[(i)] $bs[s_0^1] = \{s_0^2 \}$
 \item[(ii-a)] If $(s,c,s') \in \delta_1$, for some $c\in C$, and $u' \in bs[s']$, then there exists $u \in bs[s]$ such that $u \xrightarrow{@s} u'$, $@s_0=c$, and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0<i<|@s|$.
 % where $a = a_1, a_2, ..., a_n$ such that $a_1 = inv(m,d,k)$ and for all $i \in [2,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. 
 \item[(ii-b)] If $(s,r,s') \in \delta_1$, for some $r\in R$, and $u' \in bs[s']$, then there exists $u \in bs[s]$ such that $u \xrightarrow{@s} u'$, $@s_{|@s| -1}=r$, and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s| -1$.
 %where $a = a_1, a_2, ..., a_n$ such that $a_n = ret(m,d,k)$ and for all $i \in [1,n-1]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. 
-\item[(ii-c)] If $(s,e,s') \in \delta_1$ for some $e \in \Sigma\setminus (C\cup R)$ and $u' \in bs[s']$, then there exists $u \in bs[s]$ such that $u \xrightarrow{@s} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s|$.
+\item[(ii-c)] If $(s,e,s') \in \delta_1$ for some $e \in \Sigma\setminus \Gamma$ and $u' \in bs[s']$, then there exists $u \in bs[s]$ such that $u \xrightarrow{@s} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s|$.
 %where $a = a_1, a_2, ..., a_n$ such that for all $i \in [1,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. Moreover, $a$ could be the empty sequence.
+\item[(ii-d)] If $(s,\gamma, s') \in \delta_1$, for some $\gamma\in \Gamma\setminus (C\cup R)$, and $u' \in bs[s']$, then there exists $u \in bs[s]$ such that $u\xrightarrow{\gamma} u' \in \delta_2$
 \end{itemize}
 \end{dfn}
 

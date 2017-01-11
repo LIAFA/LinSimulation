@@ -7,19 +7,21 @@ This model captures shared-memory programs with an arbitrary number of threads,
 abstracting away the details of any particular programming system irrelevant to
 our development.
 
-A \emph{labeled transition system} (LTS) $A=(Q,\Sigma, q_0, \delta)$ over the 
+A \emph{labeled transition system} (LTS) $A=(Q,\Sigma, s_0, \delta)$ over the 
 possibly-infinite alphabet $\Sigma$ is a possibly-infinite set $Q$ of states with
-initial state $q_0 \in Q$, and a transition relation $\delta \subseteq Q \times @S \times
+initial state $s_0 \in Q$, and a transition relation $\delta \subseteq Q \times @S \times
 Q$. The $i$th symbol of a sequence $@t \in @S^*$ is denoted $@t_i$, and the empty
 sequence is denoted by $\epsilon$.
 An \emph{execution} of $A$ is an alternating sequence of states and transition labels (called also actions)
-$\rho = s_0, e_0,s_1\ldots e_{k-1},s_k$ for some $k>0$ such that $s_0 = q_0$ and $\delta(s_i, e_i, s_{i+1})$
+$\rho = s_0, e_0,s_1\ldots e_{k-1},s_k$ for some $k>0$ such that $\delta(s_i, e_i, s_{i+1})$
 for each $i$ such that $0\leq i<k$. We write $s_i\xrightarrow{e_i\ldots e_{j-1}} s_j$ for any $0\leq i\leq j <k$
 (in particular $s_i\xrightarrow{\epsilon}s_i$).
 The projection $@t| \Gamma$ of a sequence $@t$ is the maximum subsequence of $@t$ over
  alphabet $\Gamma$. This notation is extended to sets of sequences as usual.
 A \emph{trace} of $A$ is the projection $\rho | \Sigma$ of an execution $\rho$ of $A$. 
 The set of executions, resp., traces, of an LTS $A$ is denoted by $E(A)$, resp., $Tr(A)$.
+An LTS is \emph{deterministic} if for any state $s$ and any sequence $@t\in \Sigma^*$, there is at most
+one state $s'$ such that $s\xrightarrow{@t}s'$.
 
 \subsection{Libraries}
 
@@ -209,78 +211,90 @@ In practice, libraries can be made atomic by guarding their methods bodies with 
 
 \subsection{Refinement and Linearizability}
 
-Conformance of a library $L_1$ to a specification given as an ``abstract'' library $L_2$ is formally captured by \emph{(observational) refinement}. Informally, given two libraries$L_1$ and $L_2$ implementing the methods of some concurrent object, we
-say $L_1$ refines $L_2$ if{f} every computation of every programusing $L_1$ would also be possible were $L_2$ used instead. As shown in~\citet{DBLP:conf/popl/BouajjaniEEH15}
-this can be equivalently stated as history set inclusion between the two libraries.
+Conformance of a library $L_1$ to a specification given as an ``abstract'' library $L_2$ 
+is formally captured by \emph{(observational) refinement}. Informally, given two libraries
+$L_1$ and $L_2$ implementing the methods of some concurrent object, we
+say $L_1$ refines $L_2$ if{f} every computation of every program
+using $L_1$ would also be possible were $L_2$ used instead. As shown in~\citet{journals/tcs/FilipovicORY10,DBLP:conf/popl/BouajjaniEEH15},
+refinement is equivalent to the \emph{linearizability} criterion~\cite{journals/toplas/HerlihyW90} when $L_2$ is an atomic library. 
+Refinement can be proved using \emph{forward/backward simulation relations} which roughly, guarantee that steps
+in the concrete library correspond to (sequences of) steps in the abstract library.
 
 \begin{dfn}
-Let $L_1$ and $L_2$ be two libraries over a common alphabet $\Sigma$~\footnote{The two libraries could be defined over different alphabets as long as they share the same set of call/return actions.}. 
+Let $L_1$ and $L_2$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$~\footnote{The two libraries could be defined over different alphabets as long as they share the set $\Gamma$.}. 
 %agreeing on $\mathcal{M}$ and $\mathcal{D}$ sets. We define the set $A\Sigma = \{inv(m,d,i)| m \in \mathcal{M} \wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\} \cup \{ret(m,d,i)| m \in \mathcal{M}\wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\}$ as abstract transition labels. Note that $A\Sigma \subseteq \Sigma_{L_1}$ and $A\Sigma \subseteq \Sigma_{L_2}$. 
-The library $L_1$ \emph{refines} $L_2$ if{f} $H(L_1) \subseteq H(L_2)$.
+The library $L_1$ \emph{$\Gamma$-refines} $L_2$ if{f} $Tr(L_1) | \Gamma \subseteq Tr(L_2) | \Gamma$.
 %We say that $L_1$ \emph{refines} $L_2$ when $H(L_1) \subseteq H(L_2)$.
 %for every trace $e \in Tr(L_1)$, there exists a trace $e' \in Tr(L_2)$ such that $e|A\Sigma$ is equivalent to $e'|A\Sigma$.
 \end{dfn}
+The actions in $\Gamma$ are called \emph{observable actions}. Usually, $\Gamma$ consists only of call and return actions. As we show in the next sections, increasing the set of observable actions is useful in simplifying proofs of refinement.
 %Linearizability is also a relation between two libraries and it is stricter than refinement. It requires $e'$ in Definition 2 to be a sequential one. A trace $e$ is sequential iff following two conditions hold for its projection to abstract transition labels $e|A\Sigma = e_1, ...e_n$: $(i)$ $e_1 = inv(m,d,k)$ for some $m \in \mathcal{M}, d \in \mathcal{D} and k \in \mathbb{N}$ and $(ii)$ for all $i \in [1,n)$, either $e_i = inv(m,d,k)$ and $e_{i+1} = ret(m,d',k)$ or $e_i = ret(m,d,k)$ and $e_{i+1} = inv(m',d',k')$ for some $m,m' \in \mathcal{M}$, $d,d' \in \mathcal{D}$ and $k,k' \in \mathbb{N}$.
 
+Linearizability~\cite{journals/toplas/HerlihyW90} requires that 
+the operations of a concurrent library seem to take effect instantaneously at some point in time just like atomic
+implementations even if they use fine-grained concurrency and they overlap in time. The point in time
+where an operation is conceptually effectuated is called a \emph{linearization point}. There are two ways of
+defining linearizability, using the weakening order $\sqsubseteq$ between histories or using linearization points.
 
+%For some libraries,
+%the linearization points of (some of) the operations are fixed to particular implementation actions and they
+%can be exposed 
 
-
-The linearizability criterion~\cite{journals/toplas/HerlihyW90} provides an
-alternative characterization of library conformance which implies 
-refinement~\cite{journals/tcs/FilipovicORY10}. 
-The two criteria coincide when the reference implementation is atomic~\cite{DBLP:conf/popl/BouajjaniEEH15}.
-Linearizability~\cite{journals/toplas/HerlihyW90} is defined by the weakening order $\sqsubseteq$. A 
-history $h_1$ is \emph{linearizable} w.r.t.~a library $L_2$ if{f} there exists a sequential history
+A history $h_1$ is \emph{linearizable} w.r.t.~a library $L_2$ if{f} there exists a sequential history
 $h_2 \in H(L_2)$, with only
 completed operations, such that $h_1 \sqsubseteq h_2$. A library $L_1$
 is \emph{linearizable} w.r.t. $L_2$, written $L_1 \sqsubseteq L_2$, if{f}
 each history $h_1 \in H(L_1)$ is linearizable w.r.t. $L_2$.
 
-\begin{theorem}[\cite{DBLP:conf/popl/BouajjaniEEH15}]
-  $L_1 \sqsubseteq L_2$ if{f} $L_1$ refines $L_2$,
-  if $L_2$ is atomic.
-
-\end{theorem}
-
-The weakening order w.r.t. sequential histories can be also defined  in terms of ~\emph{linearization points}. Informally, a linearization point 
-of an operation in an execution is a point in time where the operation is conceptually effectuated. It corresponds to a transition in that
-execution that occurs between the call and the return action of the operation.
-A \emph{linearization point annotation} (LP-annotation for short) of a history $h$ is a sequence $\hat{h}$ obtained from $h$ by inserting actions $lin(m,d,k)$ with $m\in\<Methods>$, $d\in\<Vals>$ and $k\in \<Ops>$ such that
+The weakening order w.r.t. sequential histories can be also defined  in terms of ~\emph{linearization points}. 
+%A linearization point 
+%corresponds to a transition in that
+%execution that occurs between the call and the return action of the operation.
+A \emph{linearization point annotation} (LP-annotation for short) of a history $h$ is a sequence $\hat{h}$ obtained from $h$ by inserting actions $lin(m,d,k)$ with $m\in\<Methods>$, $d\in\<Vals>$ and $k\in \<Ops>$ such that:
 \begin{itemize}
 	\item every linearization point corresponds to an operation that has been called, i.e., TODO
 	\item every linearization point occurs between the call and the return of the corresponding operation, i.e., TODO
 	\item the return value of an operation is fixed by the linearization point, i.e., TODO
 \end{itemize}
 An LP-annotation is called \emph{complete} when every completed operation has a linearization point, i.e., TODO.
-An operation $k$ is called \emph{effectuated} in a complete LP-annotation $\hat{h}$ iff  $\hat{h}$ contains $lin(\_,\_,k)$. 
+An operation $k$ is called \emph{effectuated} in a complete LP-annotation $\hat{h}$ when  $\hat{h}$ contains $lin(\_,\_,k)$. 
 
-It has been shown that $h_1 \sqsubseteq h_2$ for a sequential history $h_2$ if{f} there exists a complete LP-annotation $\hat{h_1}$ such that  
+For a history $h_1$ and a sequential history $h_2$, $h_1 \sqsubseteq h_2$ if{f} there exists a complete LP-annotation $\hat{h_1}$ such that  
 $h_2$ is a permutation of the history $h_1'$ obtained from $h_1$ by preserving only call/return actions of effectuated operations that preserves the linearization point order, i.e.,~a given return action $ret(\_,\_,k)$ occurs before a given
   call action $call(\_,\_,k')$ in $h_2$ if{f} $lin(\_,\_,k)$ occurs before $lin(\_,\_,k')$ in $\hat{h_1}$.
 
-Refinement relations can be approximated using simulation relations, i.e., the existence of a simulation relation implies refinement. We define a notion of \emph{forward} simulation whose existence is equivalent to refinement only when the right-hand side library $L_2$ is deterministic. A dual notion of \emph{backward} simulation is defined in Appendix~\ref{app:backSim}. The existence of backward simulations is equivalent to refinement for arbitrary libraries.
+
+\begin{theorem}[\cite{journals/tcs/FilipovicORY10,DBLP:conf/popl/BouajjaniEEH15}]
+  $L_1 \sqsubseteq L_2$ if{f} $L_1$ refines $L_2$,
+  if $L_2$ is atomic.
+
+\end{theorem}
+
+We define a notion of \emph{forward} simulation whose existence implies refinement, and it is equivalent to refinement when the right-hand side library $L_2$ is deterministic. A dual notion of \emph{backward} simulation is defined in Appendix~\ref{app:backSim}. The existence of backward simulations is equivalent to refinement for arbitrary libraries.
 %We define a notion of forward simulation that is a sound approximation of refinement and a notion of backward simulation that precisely characterizes refinement. 
 For a relation $R\subseteq A\times B$, $R[X]$ denotes the set of elements of $B$ related to elements of $X$ by $R$, i.e., $R[X]=\set{y:\exists x\in X.\ R(x,y)}$.
 
 %We can extend the relations between libraries by introducing simulation relations. We will later show that simulation relations imply refinement. 
 
 \begin{dfn}
-Let $L_1=(Q_1,\Sigma, q_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, q_0^2, \delta_2)$ be two libraries over a common alphabet $\Sigma$. A relation $\mathit{fs} \subseteq Q_{1} \times Q_{2}$ is called a \emph{forward simulation} from $L_1$ to $L_2$ iff the following holds:
+Let $L_1=(Q_1,\Sigma, q_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, q_0^2, \delta_2)$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$. A relation $\mathit{fs} \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$-forward simulation} from $L_1$ to $L_2$ iff the following holds:
 \begin{itemize}
-\item[(i)] $\mathit{fs}[q_0^1] = \{q_0^2 \}$
+\item[(i)] $\mathit{fs}[s_0^1] = \{s_0^2 \}$
 \item[(ii-a)] If $(s,c,s') \in \delta_1$, for some $c\in C$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_0=c$, and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0<i<|@s|$.
 %$@s = a_1, a_2, ..., a_n$ such that $a_1 = inv(m,d,k)$ and for all $i \in [2,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. The expression $u \xrightarrow{a} u'$ means that there exists a sequence of states $u_1, u_2,...,u_{n+1}$ such that $u_1 = u$, $u_{n+1} = u'$ and for all $i \in [1,n]$, $(u_i, a_i, u_{i+1}) \in \delta_{L_2}$.
 \item[(ii-b)] If $(s,r,s') \in \delta_{1}$, for some $r\in R$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_{|@s| -1}=r$, and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s| -1$.
 % where $a = a_1, a_2, ..., a_n$ such that $a_n = ret(m,d,k)$ and for all $i \in [1,n-1]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. 
-\item[(ii-c)] If $(s,e,s') \in \delta_1$, for some $e \in \Sigma\setminus (C\cup R)$ and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{\sigma} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s|$.
+\item[(ii-c)] If $(s,e,s') \in \delta_1$, for some $e \in \Sigma\setminus \Gamma$ and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{\sigma} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s|$.
 %where $a = a_1, a_2, ..., a_n$ such that for all $i \in [1,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. Moreover, $a$ could be the empty sequence.
+\item[(ii-d)] If $(s, \gamma , s') \in \delta_1$, for some $\gamma\in \Gamma\setminus (C\cup R)$, and $u \in fs[s]$, then there exists $u' \in fs[s']$ such that $u\xrightarrow{\gamma} u'  \in \delta_2$
 \end{itemize}
 \end{dfn}
-If $\mathit{fs}[s]$ is a unique state for all $s \in Q_1$ then $\mathit{fs}$ is called a refinement mapping/function. 
+%If $\mathit{fs}[s]$ is a unique state for all $s \in Q_1$ then $\mathit{fs}$ is called a refinement mapping/function. 
+A $\Gamma$-forward simulation establishes that $L_2$ can mimic every step of $L_1$ using a (possibly empty) sequence of steps. In order to imply $\Gamma$-refinement, steps of $L_1$ labeled by observable actions are treated in a particular way: a step of $L_1$ labeled by a call, resp., return, action is simulated by a sequence of steps of $L_2$ that start, resp., end, with the same action, and a step of $L_1$ labeled by another observable action should be matched by a step of $L_2$ labeled by the same action. The rest of the transitions in $L_1$ must be simulated by a possibly empty sequence of transitions of $L_2$ (with arbitrary labels).
 
-Simulation relations are used to prove refinement among libraries. The following lemma shows their soundness:
+Simulation relations are used to prove refinement among libraries. The following lemma shows their soundness and their completeness (when $L_2$ is deterministic).
 \begin{lem}
-Let $L_1$ and $L_2$ be two libraries over a common alphabet $\Sigma$. If there exists a forward simulation from $L_1$ to $L_2$, then $L_1$ refines $L_2$. Moreover, if $L_2$ is deterministic and $L_1$ refines $L_2$, then there exists a forward simulation from $L_1$ to $L_2$.
+Let $L_1$ and $L_2$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$. If there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$, then $L_1$ $\Gamma$-refines $L_2$. Moreover, if $L_2$ is deterministic and $L_1$ $\Gamma$-refines $L_2$, then there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$.
 \end{lem}
 \begin{proof}
 Looks trivial and follows Lynch paper. Can be completed later.
