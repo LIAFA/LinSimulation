@@ -221,7 +221,7 @@ Refinement can be proved using \emph{forward/backward simulation relations} whic
 in the concrete library correspond to (sequences of) steps in the abstract library.
 
 \begin{dfn}
-Let $L_1$ and $L_2$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$~\footnote{The two libraries could be defined over different alphabets as long as they share the set $\Gamma$.}. 
+Let $L_1$ and $L_2$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$~\footnote{The two libraries could be defined over different alphabets as long as they share $\Gamma$.}. 
 %agreeing on $\mathcal{M}$ and $\mathcal{D}$ sets. We define the set $A\Sigma = \{inv(m,d,i)| m \in \mathcal{M} \wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\} \cup \{ret(m,d,i)| m \in \mathcal{M}\wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\}$ as abstract transition labels. Note that $A\Sigma \subseteq \Sigma_{L_1}$ and $A\Sigma \subseteq \Sigma_{L_2}$. 
 The library $L_1$ \emph{$\Gamma$-refines} $L_2$ if{f} $Tr(L_1) | \Gamma \subseteq Tr(L_2) | \Gamma$.
 %We say that $L_1$ \emph{refines} $L_2$ when $H(L_1) \subseteq H(L_2)$.
@@ -284,9 +284,9 @@ Let $L_1=(Q_1,\Sigma, q_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, q_0^2, \delta_2)$ 
 %$@s = a_1, a_2, ..., a_n$ such that $a_1 = inv(m,d,k)$ and for all $i \in [2,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. The expression $u \xrightarrow{a} u'$ means that there exists a sequence of states $u_1, u_2,...,u_{n+1}$ such that $u_1 = u$, $u_{n+1} = u'$ and for all $i \in [1,n]$, $(u_i, a_i, u_{i+1}) \in \delta_{L_2}$.
 \item[(ii-b)] If $(s,r,s') \in \delta_{1}$, for some $r\in R$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_{|@s| -1}=r$, and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s| -1$.
 % where $a = a_1, a_2, ..., a_n$ such that $a_n = ret(m,d,k)$ and for all $i \in [1,n-1]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. 
-\item[(ii-c)] If $(s,e,s') \in \delta_1$, for some $e \in \Sigma\setminus \Gamma$ and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{\sigma} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s|$.
+\item[(ii-c)] If $(s, \gamma , s') \in \delta_1$, for some $\gamma\in \Gamma\setminus (C\cup R)$, and $u \in fs[s]$, then there exists $u' \in fs[s']$ such that $u\xrightarrow{\gamma} u'  \in \delta_2$.
+\item[(ii-d)] If $(s,e,s') \in \delta_1$, for some $e \in \Sigma\setminus \Gamma$ and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{\sigma} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s|$.
 %where $a = a_1, a_2, ..., a_n$ such that for all $i \in [1,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. Moreover, $a$ could be the empty sequence.
-\item[(ii-d)] If $(s, \gamma , s') \in \delta_1$, for some $\gamma\in \Gamma\setminus (C\cup R)$, and $u \in fs[s]$, then there exists $u' \in fs[s']$ such that $u\xrightarrow{\gamma} u'  \in \delta_2$
 \end{itemize}
 \end{dfn}
 %If $\mathit{fs}[s]$ is a unique state for all $s \in Q_1$ then $\mathit{fs}$ is called a refinement mapping/function. 
