@@ -1,0 +1,52 @@
+% Suha's Proposal
+\documentclass[orivec]{llncs}
+
+
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{arydshln}
+\usepackage{amsmath}
+%\usepackage{amsthm}
+\usepackage{color}
+
+
+\usepackage{amsfonts}
+\usepackage{latexsym}
+\usepackage{wasysym} % causing problems with llncs's bold vectors
+\usepackage{stmaryrd}
+\usepackage{alltt}
+\usepackage{mathpartir}
+\usepackage[ligature,reserved,inference]{semantic}
+\usepackage[lined]{algorithm2e}
+\def\ttat{\mtt{@}} % the at package clobbers this
+\usepackage{at}
+
+\usepackage[numbers]{natbib}
+
+\input macros
+
+\newtheorem{dfn}{Definition}
+\newtheorem{lem}{Lemma}
+
+\title{Existence of Forward Simulations for Particular Data Structures}
+\begin{document}
+
+\maketitle
+
+\input{prelim}
+
+\input{queue}
+\section{Existence of Forward Simulations for Stack Implementations that have Fixed Pop Linearization Points}
+\input{commit}
+\input{set}
+
+\bibliographystyle{abbrvnat}
+\bibliography{violin-short}
+
+\newpage
+\appendix
+
+\input{app-backSim}
+
+\end{document}
