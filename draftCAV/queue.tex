@@ -1,78 +1,102 @@
-\section{Existence of Forward Simulations for Queue Implementations that have Fixed Dequeue Linearization Points}
-In this section, we will show that for any concurrent queue implementation library $L_C$ for which we know the linearization points of the dequeue operation and that is linearizable with respect to the reference implementation library $L_A$, there exists a forward simulation $fs$ relating $L_C$ to $L_I$ where $L_I$ is an intermediate library equivalent to $L_A$ i.e. $L_I$ refines $L_A$ and vice versa.  
+%!TEX root = draft.tex
+\section{Queues With Fixed Dequeue Linearization Points}
 
-For all the queue libraries, we fix $\mathcal{M} = \{ enq, deq \}$ and $\mathcal{D} = \mathbb{N} \cup \{\texttt{EMPTY} \}$. Since we know the linearization point of dequeues, we extend the definitions of the previous sections adding this information. First, we extend the set $A\Sigma$ introduced in Definition 2 for queues in our focus as $AQ\Sigma = A\Sigma \cup \{lin(deq,d,k)| d \in \mathcal{D}, k \in \mathbb{N}\}$. For any library $L$ we consider in this section, $AQ\Sigma \subseteq \Sigma_L$. Then, we define q-refinement by replacing $A\Sigma$ with $AQ\Sigma$ in Definition 2. We also define q-linearizability, by enforcing $lin(deq,d,k)$ to appear immediately after $inv(deq,k)$ and immediately before $ret(deq,d,k)$ in a sequential execution. We also change definition of forward and backward simulation relations by replacing $A\Sigma$ with $AQ\Sigma$ in the original definitions and adding a new condition $(ii-d)$ to each of them:
-\begin{itemize}
-\item[Forward Simulation: (ii-d)] If $(s, lin(deq,d,k), s') \in \delta_{L_1}$ and $u \in fs[s]$, then there exists $u' \in fs[s']$ such that $(u, lin(deq,d,k), u') \in \delta_{L_2}$
-\item[Backward Simulation: (ii-d)] If $(s, lin(deq,d,k), s') \in \delta_{L_1}$ and $u' \in bs[s']$, then there exists $u \in bs[s]$ such that $(u, lin(deq,d,k), u') \in \delta_{L_2}$
-\end{itemize}
-Lemma 1 of the previous section still holds if we replace refinement with q-refinement and use new definitions of backward and forward simulations.
+The typical abstract implementation of a concurrent queue maintains a sequence of values, the enqueue method adds a value atomically to the beginning of the sequence, and the dequeue method removes a value from the end of the sequence (if any, otherwise it returns ``empty''). Both methods have a fixed linearization point when the update of the shared sequence happens. Let $AbsQ_0$ denote this implementation (formally defined in Appendix~\ref{app:absImplQueue}). In this section, we describe another abstract implementation, denoted as $AbsQ$, which roughly maintains a \emph{partially-ordered set} of values instead of a sequence. We show that there exists a forward simulation from any correct queue implementation where the dequeue methods have fixed linearization points to $AbsQ$. We are not aware of any implementation that doesn't satisfy this property. As a proof of concept, we describe a forward simulation from the Herlihy\&Wing queue~\cite{journals/toplas/HerlihyW90} to $AbsQ$.
 
-Next, we define the abstract library $L_A$ as follows:
-\begin{itemize}
-\item A queue state consists of a finite sequence of natural numbers representing the queue content and a program counter for each operation. More formally: $Q_A \subseteq \mathbb{N}^*  \times (\mathbb{N} \rightarrow Lbl_A)$ where $Lbl_A = \{N, E_0, E_1, E_2, D_0, D_1, D_2 \}$ is the set of transition labels of the operations. Operations that have not started yet are mapped to $N$. $E_i$ ($D_i$) denotes particular transitions in enqueue (dequeue) operations that will be clear when we define $\delta_A$. For a state $q$, we denote the contents of the queue (first field) with $s_q$ and the function that maps operations to labels (the second field) with $f_q$.
-\item Transition labels consists of invocations, returns and linearizations of enqueue and dequeue operations: $\Sigma_A = AQ\Sigma \cup \{lin(enq,d,k)| d \in \mathcal{D}, k \in \mathbb{N}\}$. Invocation of $deq$ operation does not have any input and return of $enq$ operation does not have any output value. We omit second fields from these labels.
-\item Initial state is the empty queue: ${q_0}_A = (\langle \rangle, f_{{q_0}_A})$ where $f_{{q_0}_A}(i) = N$ for all $i \in \mathbb{N}$.
-\item Each operation consists of invocation, linearization and return steps. These are reflected in the transition relation. For the below definitions, unchanged parts of the state are omitted from the formulae:
-\begin{itemize}
-\item $(q, inv(enq,d,k), q') \in \delta_A$ iff $ d \neq \texttt{EMPTY} \wedge f_q(k) = N \wedge f_{q'}(k) = E_0$,
-\item $(q,lin(enq,d,k),q') \in \delta_A$ iff $f_q(k) =E_0 \wedge s_{q'} = s_q \circ \langle d \rangle \wedge f_{q'}(k) = E_1$ where $\circ$ is the operation that concatenates two finite sequences,
-\item $(q,ret(enq,k),q') \in \delta_A$ iff $f_q(k) = E_1 \wedge f_{q'}(k) = E_2$,
-\item $(q, inv(deq,k), q') \in \delta_A$ iff $f_q(k) = N \wedge f_{q'}(k) = D_0$
-\item $(q,lin(deq,d,k),q') \in \delta_A$ iff $f_q(k) =D_0 \wedge (d \neq \texttt{EMPTY} \wedge s_q = \langle d \rangle \circ s_{q'} \vee d=\texttt{EMPTY} \wedge s_q = s_{q'} = \langle \rangle )\wedge f_{q'}(k) = D_1$, 
-\item $(q,ret(deq,d,k),q') \in \delta_A$ iff $f_q(k) = D_1 \wedge f_{q'}(k) = D_2$.
-\end{itemize}
+\subsection{Abstract Queue Implementation}
 
-\end{itemize} 
-We restrict traces generated by this LTS by neglecting the invalid traces. If we project a trace to some operation identifier $k$ and obtain a sequence $\langle ..., inv(enq,d,k), lin(enq,d',k),...\rangle$ or $\langle ..., lin(deq,d,k), ret(deq,d',k),...\rangle$ where $d \neq d'$ we say that this trace is invalid.
+Informally, $AbsQ$ records the happens-before order between enqueue operations for which the added value has not been removed by a dequeue operation. The linearization point of a dequeue operation with return value $d\neq{\tt EMPTY}$ is enabled only if the happens-before order stored in the current state contains a minimal enqueue operation that adds the value $d$. The effect of the linearization point is that the minimal enqueue is removed from the current state and the return value is recorded in the library state. When the return value is {\tt EMPTY}, the linearization point of a dequeue is enabled only if the current state stores no enqueue operation. The return of a dequeue is enabled only if the returned value matches the one fixed at the linearization point.
 
-We want to introduce $L_I$ as the next step. States of $L_I$ consists of strict orders of enqueue operations. Nodes of the strict order come from the set $ND = \mathbb{N} \times \mathcal{D} \times \{ \texttt{PENDING}, \texttt{CLOSED}\}$. Basically each node is a tuple keeping the operation ID, the value to be enqueued and if this enqueue is pending or closed. Strict order also keeps a set of directed edges $ ed \subseteq ED = ND \times ND$. Then, a strict order is a tuple $(nd, ed)$ where the set $ed$ obeys the assumption of strict order i.e. irreflexivity, asymmetry and transitivity. Then, the LTS of $L_I$ is defined as follows:
-\begin{itemize}
-\item A state consists of a partial order and a function keeping the program counter. More formally $Q_I \subseteq ND \times ED \times (\mathbb{N} \rightarrow Lbl_I)$ where $Lbl_I = \{N, E_0, E_1, D_0, D_1, D_2\} $ is the set of transition labels. $nd_q$ $ed_q$ and $f_q$ denotes the nodes of the strict order in state $q$, edges of the strict order in state $q$ and the function that maps operation to labels in state $q$, respectively. 
-\item The transition label set consists of invocation and return action of both methods and linearization action of only the dequeue method: $\Sigma_I = AQ\Sigma$. Invocation of $deq$ operation does not have any input and return of $enq$ operation does not have any output value. We omit second fields from these labels.
-\item Initial state consists of an empty strict order and a function mapping every operation to $N$: ${q_0}_{I} = (so_{{q_0}_I}, f_{{q_0}_I}$ where $so_{{q_0}_I} =(\emptyset, \emptyset)$ and $f_{{q_0}_I}(i) = N$ for all $i \in \mathbb{N}$.
-\item While defining $\delta_I$, we again omit mentioning about the parts that has not changed:
-\begin{itemize}
-\item $(q, inv(enq,d,k), q') \in \delta_I$ iff $f_q(k) = N \wedge f_{q'}(k) = E_0 \wedge d \neq \texttt{EMPTY} \wedge (k,\_,\_) \notin nd_q \wedge nd_{q'} = nd_q \cup \{ (k,d,\texttt{PENDING}\} \wedge AddNode(ed_{q'}, ed_q,k)$ where $AddNode(ed_{q'}, ed_q,k)$ is true iff $ed_{q'}$ is obtained from $ed_q$ by adding edges from every closed node of $ed_q$ to the node with identifier $k$.
-\item $(q, ret(enq,k), q') \in \delta_I$ iff $f_q(k) =E_0 \wedge f_{q'}(k) = E_1 \wedge ( (k,\_,\texttt{PENDING}) \notin nd_q \wedge so_q = so_{q'} \vee UpdateNode(so_{q'}, so_q, k) )$ where $UpdateNode(so_{q'}, so_q, k)$ is true iff $(k,d,\texttt{PENDING}) \in nd_q$ for some $d \in \mathcal{D}$, it is replaced with node $(k,d,\texttt{CLOSED}$ in the state $q'$ and all the edges adjacent to $(k,d,\texttt{PENDING})$ in state $q$ are replaced with edges adjacent to $(k,d,\texttt{CLOSED})$ in the state $q'$.
-\item $(q, inv(deq,k), q') \in \delta_I$ iff $f_q(k) = N \wedge f_{q'}(k) = D_0$.
-\item $(q, lin(deq,d,k), q') \in \delta_I$ iff $f_q(k) = D_0 \wedge f_{q'}(k) = D_1 \wedge (d = \texttt{EMPTY} \wedge nd_q = ed_q = nd_{q'} = ed_{q'} \emptyset \vee d \neq \texttt{EMPTY} \wedge RemoveNode(so_q, so_{q'},d))$ where $RemoveNode(so_q, so_{q'},d)$ is true iff there is a minimal node $n \in so_q$ of which data value (second field) is $d$ and $so_{q'}$ is obtained from $so_q$ by removing $n$ and all the edges adjacent to it. Note that linearization of dequeue could remove a \texttt{PENDING} node.  
-\item $(q, ret(deq,d,k) q') \in \delta_I$ iff $f_q(k) = D_1 \wedge f_{q'}(k) = D_2$.
-\end{itemize}
-\end{itemize}
-Again, we omit the inconsistent traces from $L_I$ as in $L_A$. Note that the library $L_I$ is deterministic with respect to alphabe $AQ\Sigma$.
+The states of $AbsQ$ are tuples $\tup{O,<,\ell,rval,cp}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked enqueue operations), $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a flag that records whether the operation is pending or completed, $rval:\<Ops> ~> \<Vals>$ records the return value of a pending dequeue fixed at its linearization point, and $cp:\<Ops> ~> \<Nats>$ records the control point of every pending (enqueue or dequeue) operation.
+The initial state is $\tup{\emptyset,\emptyset,\emptyset,\emptyset,\emptyset}$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsQ}.
 
-Next, we show equivalence of $L_A$ and $L_I$ in terms of q-refinement.
-\begin{lem} 
-$L_I$ is a q-refinement of $L_A$.
-\end{lem}
-\begin{proof}
-We will provide a backward simulation relation btw $L_I$ and $L_A$. Given a state $q = (so_q, f_q) \in Q_I$,  $q' \in bs[q]$ iff (i) $s_{q'}$ is a linearization of $so_q$ projected to $d$ fields (second field). This linearization may omit the pending elements (the ones of which third field is \texttt{PENDING}), but it must contain all the \texttt{CLOSED} elements. Note that pending elements of $so_q$ are maximal and they can appear after the closed elements, towards the end of the sequence. (ii) If $f_q(k) \in \{N, D_0, D_1, D_2\}$, then $f_{q'}(k) = f_q(k)$ . If $f_q(k) = E_0$, $(k,d,\texttt{PENDING}) \in nd_q$ and this node participates in the linearization $s_{q'}$. Then $f_{q'}(k) = E_1$. If it does not participate in the linearization, then $f_{q'}(k) = E_0$. If $f_q(k) = E_0$ but there is no node with operation identifier $k$ in $nd_q$, then $f_{q'} = E_1$. Lastly, if $f_q(k) = E_1$ then $f_{q'}(k) = E_2$. Next, we will show that $bs$ is a backward simulation relation.
-\begin{itemize}
-\item[$\langle i \rangle$] $bs[{q_0}_I] = \{ {q_0}_A \}$.
-\item[$\langle ii-a-enq \rangle$] Let $(q, inv(enq,d,k), q') \in \delta_I$ and $t' \in bs[q']$. We know that $(k,d,\texttt{PENDING}$ is a maximal element in $so_{q'}$ and either $s_{t'}$ does not linearize it or $s_{t'} = \rho \circ \langle d \rangle \circ \pi$ where $\pi$ consists of only linearization of \texttt{PENDING} elements. For the first case $s_{t'} = s_t$ for some $t \in bs[q]$ and $(t,inv(enq,d,k),t') \in \delta_A$. For the latter case, $s_t = \rho$ for some $t \in bs[q]$ and $t \xrightarrow{a}_{L_A} t'$ where $a = inv(enq,d,k), lin(enq,d,k), lin(enq,d_1,k_1),...,lin(enq,d_j,k_j)$ where $\pi = d_1,...d_j$. The $f_t$ could be obtained easily by observing the sequence $a$ and it can be checked that such $t \in bs[q]$ exists.
-\item[$\langle ii-a-deq \rangle$] Let $(q, inv(deq,k), q') \in \delta_I$ and $t' \in bs[q']$. We know that $f_{t'}(k) = D_0$. We know that there is a $t \in bs[q]$ such that $s_t = s_{t'}$ (since $so_q = so_{q'}$), $f_t(k) = N$ and $(t,inv(deq,k),t') \in \delta_A$.
-\item[$\langle ii-d \rangle$] Let $(q,lin(deq,d,k),q') \in \delta_I$ and $t' \in bs[q']$. First consider the case $d \neq \texttt{EMPTY}$. We have two cases: Either the node with operation id $k$ in the $so_q$ was \texttt{PENDING} or \texttt{CLOSED}. For both of the cases, we can find $t \in bs[q]$ such that $s_t = \langle d \rangle \circ s_{t'}$ and $f_t(k) = D_0$. Hence $(t,lin(deq,d,k),t') \in \delta_I$. Next, consider the case $d = \texttt{EMPTY}$. Then, we know that $s_{t'} = \langle \rangle$ and there exists $t \in bs[q]$ such that $s_t = \langle \rangle$ and $f_t = D_0$. Hence $(t,lin(deq,d,k),t') \in \delta_A$.
-\item[$\langle ii-b-enq \rangle$] Let $(q,ret(enq,k),q') \in \delta_I$ and $t' \in bs[q']$. There are two possible cases: There exists a node $(k,d,\texttt{PENDING}) \in nd_q$ or for all nodes $n = (k,\_,\_)$, $n \notin nd_q$. For the former case, $s_{t'} = \rho \circ \langle d \rangle \circ \pi$ where $\rho$ is linearization of closed nodes in $nd_{q'}$ and $\pi$ is linearization of some open nodes in $node_{q'}$. We also know that $f_{t'}(k) = E_2$. Then, there exists a node $t \in bs[q]$ such that $s_t = s_{t'}$ (since nodes that generate $\rho$ are closed in $q$ and that generate $\pi$ are open in $q$) and $f_t(k) = E_1$. Hence, $(t,ret(deq,k),t') \in \delta_A$. For the latter case, we know that $so_q = so_{q'}$. Therefore, there exists $t \in bs[q]$ such that $s_t = s_{t'}$. Moreover $f_t(k) = E_1$. Hence, $(t,ret(enq,k),t') \in \delta_A$.
-\item[$\langle ii-b-deq \rangle$] Let $(q,ret(deq,d,k), q') \in \delta_I$ and $t' \in bs[q']$. Then, we know that $f_{t'}(k) = D_2$ and there exists a $t \in bs[q]$ such that $s_t = s_{t'}$ (since $so_q = so_{q'})$ and $f_t(k) = D_1$. Then, $(t,ret(deq,d,k) \in \delta_A$.
-\end{itemize}
-\end{proof}
+\begin{figure} [t]
+{\footnotesize
+  \centering
+  \begin{mathpar}
+    \inferrule[call-enq]{
+      k\not\in dom(cp) \\ 
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{inv(enq,d,k)}
+      O\cup\{k\},<\cup \{(k',k): \ell_2(k')={\tt COMP}\},\ell[k\mapsto (d,{\tt PEND})],rval,cp[k\mapsto 1]
+    }\hspace{5mm}
 
-\begin{lem}
-$L_A$ is a q-refinement of $L_I$.
-\end{lem}
-\begin{proof}
-Since $L_I$ is deterministic with respect to the alphabet $AQ\Sigma$, we should be able to find a forward simulation between $L_A$ and $L_I$ if our claim is correct. We propose a forward simulation by adding some auxiliary varibles to the state of $L_A$. In the new augmented state of $L_A$, the sequence does not only keep the elements of the queue but also the operation identifiers that enqueued them. Hence, the sequence consists of  pairs of the form $s_q(i) = (k,d)$ where $q \in Q_A$, $i \in \mathbb{N}$ is an index, $d \in \mathcal{D}\backslash \{ \texttt{EMPTY} \}$ is a value and $k \in \mathbb{N}$ is an operation identifier. We also add a set $InvEnq_q$ component to state that keeps the enqueue operations at the point $E_0$ i.e. enqueues that are invoked bu have not been linearized yet. Elements of $InvEnq_q$ are pairs of the form $(d,k)$ where  $d \in \mathcal{D}\backslash \{ \texttt{EMPTY} \}$ is a value and $k \in \mathbb{N}$ is an operation identifier. Then our forward simulation $fs \subseteq Q_A \times Q_I$ relates the state $q = (s_q, f_q) \in Q_A$ to a state $q' =(so_{q'}, f_{q'}) \in Q_I$ iff (i) $f_{q'}(k) = f_q(k)$ for all $f_q(k) \in \{N, D_0, D_1, D_2\}$, (ii) $f_q(k) = E_0$ or $f_q(k) = E_1$ implies $f_{q'}(k) = E_0$, (iii) $f_q(k) = E_2$ implies $f_{q'}(k) = E_1$, (iv) If $(d,k) \in InvEnq_q$ or there exists an index $i \in \mathbb{N}$ such that $s_q(i) = (k,d)$ and $f_q(k) = E_1$, then $(k,d,\texttt{PENDING})$ is a node in $so_{q'}$, (v) if there exists an index $i \in \mathbb{N}$ such that $s_q(i) = (k,d)$ and $f_q(k) = E_2$ then $(k,d,\texttt{CLOSED})$ is a node in $so_{q'}$, (vi) open nodes in $so_{q'}$ are maximal and (vii) there exists a linearization (total order) $lo_{q'}$ of $so_{q'}$ that may omit some open nodes of $so_{q'}$ such that if we project nodes of
-$lo_{q'}$ to the first two fields, this linear order is equal to the sequence $s_q$.
+    \inferrule[call-deq]{
+      k\not\in dom(cp) \\ 
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{inv(deq,k)}
+      O,<,\ell,rval,cp[k\mapsto 1]
+    }\hspace{5mm}
+    \inferrule[ret-deq]{
+       cp(k) = 2 \\
+       rval(k)=d  
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{ret(deq,d,k)}
+      O,<,\ell,rval,cp[k\mapsto 3]
+    }\hspace{5mm}
 
-Next, we will show that $fs$ is a forward simulation relation:
-\begin{itemize}
-\item[$\langle i \rangle$] $fs[(q_0)_A] = \{(q_0)_I\}$
-\item[$\langle ii-a-enq \rangle$] Let $(q,inv(enq,d,k),q') \in \delta_A$ and $t \in fs[q]$. We can obtain $t'$ such that $(t,inv(enq,d,k),t') \in \delta_I$. We show that $t' \in fs[q']$ by checking seven conditions of our $fs$ relation. We omit the node $(k,d)$ while linearizing $so_{t'}$ and obtain $s_{q'}$.
-\item[$\langle ii-a-deq \rangle$] Let $(q, inv(deq,k), q') \in \delta_A$ and $t \in fs[q]$. We obtain $t'$ such that $(t, inv(deq,k),t') \in \delta_I$. The only difference between $t'$ and $t$ is that $f_{t'}(k) = D_0$. We can again see that $t' \in fs[q']$. 
-\item[$\langle ii-c \rangle$] Let $(q,lin(enq,d,k),q') \in \delta_A$ and $t \in fs[q]$. Pick $t' = t$. We can see that $t \in fs[q']$. While obtaining linearization of $so_{t'}$, we do not neglect the node $(k,d, \texttt{PENDING})$ this time, although we neglect it in the linearization of $so_t$.
-\item[$\langle ii-d \rangle$] Let $(q, lin(deq,d,k), q') \in \delta_A$ and $t \in fs[q]$. Obtain $t'$ such that $(t, lin(deq,d,k), t') \in \delta_I$. In $s_q$, $(k,d)$ must be the minimum element. Hence, $(k,d,\_)$ is a minimal node in $so_t$ and $lin(deq,d,k)$ is an enabled action in $L_I$. This action removes the node $(k,d,\_)$ from $so_t$ and changes $f_t(k)=D_0$ to $f_{t'}(k)= D_1$. We can see that $t' \in fs[q']$ by checking the seven conditions.
-\item[$\langle ii-b-enq \rangle$] Let $(q, ret(enq,k), q') \in \delta_A$ and $t \in fs[q]$. There are two cases: Either there exists an index $i \in \mathbb{N}$ such that $s_q(i) = (k,d)$ or there is no such $i$. For the former case, there is no node of the form $(k,d,\_)$ in $so_t$. We obtain $t'$ such that $(t,ret(enq,k),t') \in \delta_I$. Then, there is no node of the form $(k,d,\_)$ in $so_{t'}$ neither and $so_{t'} = so_t$. since $s_q = s_{q'}$ also holds for this case, $t' \in fs[q']$ holds. For the latter case, we again pick $t'$ such that $(t, ret(enq,k), t') \in \delta_I$. Again, $so_t = so_{t'}$ and $s_q = s_{q'}$ holds and $t' \in fs[q']$ can be observed.
-\item[$\langle ii-b-deq \rangle$] Let $(q, ret(deq,d,k), q') \in \delta_A$ and $t \in fs[q]$. We pick $t'$ such that $(t, ret(deq,d,k), t') \in \delta_I$. We know that $so_t = so_{t'}$ and only change is $f_{t'}(k) = D_2$. Since we know that $s_q = s_{q'}$ and $f_{q'}(k) = D_2$, $t' \in fs[q']$ holds.  
-\end{itemize}
-\end{proof}
+    \inferrule[ret-enq1]{
+      cp(k) = 1 \\
+      k \in O \\
+      \ell(k) = (d,{\tt PEND}) 
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{ret(enq,k)}
+      O,<,\ell[k\mapsto (d,{\tt COMP})],rval,cp[k\mapsto 2]
+    }\hspace{5mm}
+    \inferrule[ret-enq2]{
+      cp(k) = 1 \\
+      k \not\in O 
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{ret(enq,k)}
+      O,<,\ell,rval,cp[k\mapsto 2]
+    }\hspace{5mm}
+
+    \inferrule[lin-deq1]{
+       cp(k) = 1 \\
+       d\neq{\tt EMPTY} \\
+       \exists k'\in O.\ k'\in min(<) \land \ell_1(k')=d
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{lin(deq,d,k)}
+      O\setminus \{k\},<\uparrow k,\ell,rval[k\mapsto d],cp[k\mapsto 2]
+    }\hspace{5mm}
+
+    \inferrule[lin-deq2]{
+       cp(k) = 1 \\
+       O=\emptyset
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{lin(deq,{\tt EMPTY},k)}
+      O,<,\ell,rval[k\mapsto {\tt EMPTY}],cp[k\mapsto 2]
+    }\hspace{5mm}
+
+    
+      \end{mathpar}
+  }
+ \vspace{-5mm}
+  \caption{The transition relation of $AbsQ$.}
+  \label{fig:transitions:AbsQ}
+\vspace{-6mm}
+\end{figure}
+
+The following result states that the library $AbsQ$ has exactly the same set of histories as the standard abstract library $AbsQ_0$ (see Appendix~\ref{app:absImplQueue} for a proof).
+
+\begin{theorem}\label{th:absImplQueue}
+$AbsQ$ is a refinement of $AbsQ_0$ and vice-versa.
+\end{theorem}
+
+A library $L$ is called a \emph{queue implementation} when its alphabet consists of call and return actions defined over $\<Methods>=\{enq,deq\}$. Let $LP(deq)$ be the set of all actions $lin(deq,d,k)$ for some $d\in\<Vals>$ and $k\in\<Ops>$. A trace of a queue implementation is called $LP(deq)$-complete when every completed dequeue has a linearization point, i.e., TODO. A queue implementation $L$ over alphabet $\Sigma$ is called \emph{with fixed dequeue linearization points} if{f} $C\cup R\cup LP(deq)\subseteq \Sigma$ 
+and every trace $@t\in Tr(L)$ is $LP(deq)$-complete.
+
+The following result shows that $C\cup R\cup LP(deq)$-forward simulations are a sound and complete proof method for showing the correctness of a queue implementation with fixed dequeue linearization points (up to the correctness of the linearization points). It is obtained from Theorem~\ref{th:absImplQueue} and Theorem~\ref{th:forSim} using the fact that the alphabet of $AbsQ$ is exactly $C\cup R\cup LP(deq)$ and $AbsQ$ is deterministic.
+
+\begin{corollary}
+A queue implementation $L$ with fixed dequeue linearization points is a $C\cup R\cup LP(deq)$-refinement of $AbsQ_0$ if{f} there exists a $C\cup R\cup LP(deq)$-forward simulation from $L$ to $AbsQ$.
+\end{corollary}
+
+\subsection{A Correctness Proof For Herlihy\&Wing Queue}
