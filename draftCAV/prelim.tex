@@ -14,8 +14,8 @@ Q$. The $i$th symbol of a sequence $@t \in @S^*$ is denoted $@t_i$, and the empt
 sequence is denoted by $\epsilon$.
 An \emph{execution} of $A$ is an alternating sequence of states and transition labels (called also actions)
 $\rho = s_0, e_0,s_1\ldots e_{k-1},s_k$ for some $k>0$ such that $\delta(s_i, e_i, s_{i+1})$
-for each $i$ such that $0\leq i<k$. We write $s_i\xrightarrow{e_i\ldots e_{j-1}} s_j$ for any $0\leq i\leq j <k$
-(in particular $s_i\xrightarrow{\epsilon}s_i$).
+for each $i$ such that $0\leq i<k$. We write $s_i\xrightarrow{e_i\ldots e_{j-1}} s_j$ \textcolor{red}{as shorthand for $s_i,e_i,...,s_{j-1},e_{j-1},s_j$ subsequence of $\rho$,} for any $0\leq i\leq j <k$
+(in particular $s_i\xrightarrow{\epsilon}s_i$)\textcolor{red}{(I also propose to add subscript to the arrow mentioning the machine name like $s_i \xrightarrow{\alpha}_A s_j$ to avoid confusion between machines in the forward simulation definition. This will require us to change arrows in forward and backward simulation definitions.)}.
 The projection $@t| \Gamma$ of a sequence $@t$ is the maximum subsequence of $@t$ over
  alphabet $\Gamma$. This notation is extended to sets of sequences as usual.
 A \emph{trace} of $A$ is the projection $\rho | \Sigma$ of an execution $\rho$ of $A$. 
@@ -55,7 +55,7 @@ combines a method $m \in \<Methods>$ and value $d \in \<Vals>$ with an
 pair call and return actions. We denote the operation identifier of a
 call/return action $a$ by $\<op>(a)$. Call and return actions $c \in C$ and $r
 \in R$ are \emph{matching}, written $c \match r$, when $\<op>(c) = \<op>(r)$. 
-We may omit the second field from a call/return action $a$ for methods that have no inputs or return values 
+We may omit the second field from a call/return action $a$ for methods that have no inputs \textcolor{red}{(e.g., the pop method of a stack)}or return values \textcolor{red}{(e.g., the push method of a stack)} 
 (e.g., the pop method of a stack).
 A word $\tau \in @S^*$ over alphabet $@S$, such that $(C \u R) \subseteq @S$, is
 \emph{well formed} when:
@@ -144,6 +144,7 @@ which method calls and returns overlap.
 %thread identifiers can be modeled by taking thread identifiers as method
 %parameters.
 
+\textcolor{red}{For the below paragraph, I cannot see the equivalence  of informal explanation and formal definition of weakening. I think the formal one should be if a ret comes before a call in $h_1'$ then this order is preserved in $h_2$. But the definition says iff. Ignore this if I am wrong.}
 Since libraries only dictate methods’ executions between their respective calls and returns, for any history they admit, they must also 
 admit histories with weaker inter-operation ordering, in which calls may happen earlier, and/or returns later. This weakening relation
 between histories can be formalized as follows: a history $h_1$ is \emph{weaker} than a history $h_2$, written $h_1 \sqsubseteq h_2$, 
@@ -157,10 +158,11 @@ such that:
   call action in $h_1'$ if{f} the same holds in $h_2$.
 
 \end{quote}
+
 $\overline{H}$ denotes the closure $\set{h: \exists h' \in H.\ h \sqsubseteq h'}$ of a 
 history set $H$ under weakening.
 A direct consequence of Definition~\ref{def:libraries} is that $H(L)=\overline{H(L)}$ for
-every library $L$. A \emph{kernel} of L is any set $H$ such that $\overline{H} = L$.
+every library $L$. A \emph{kernel} of L is any set $H$ such that $\overline{H} = L$ \textcolor{red}{(I think the correct expression is $\overline{H} = H(L)$ which makes the example set $H$ and the operator $H$  that extracts history from a library confusing with each other)}.
 A library $L$ is called atomic if it has a sequential kernel. 
 Atomic libraries are often considered as specifications for concurrent objects. 
 In practice, libraries can be made atomic by guarding their methods bodies with global lock acquisitions.
@@ -211,6 +213,7 @@ In practice, libraries can be made atomic by guarding their methods bodies with 
 
 \subsection{Refinement and Linearizability}
 
+\textcolor{red}{A general organizational idea for  this subsection: Linearizability is defined in terms of weakening in which observational actions are just call and return events. Then, we put forward the idea of enriching $\Gamma$ by adding new actions. In the current organization, linearizability is defined after refinement before which this $\Gamma$ extension argument is explained. Hence, people may confuse that notion of linearizability is based on $\Gamma$ set we picked. I propose to first introduce linearizability. Then explain refinement and give Theorem 1.}
 Conformance of a library $L_1$ to a specification given as an ``abstract'' library $L_2$ 
 is formally captured by \emph{(observational) refinement}. Informally, given two libraries
 $L_1$ and $L_2$ implementing the methods of some concurrent object, we
@@ -221,13 +224,14 @@ Refinement can be proved using \emph{forward/backward simulation relations} whic
 in the concrete library correspond to (sequences of) steps in the abstract library.
 
 \begin{dfn}
+\textcolor{red}{We assign same alphabet to both libraries in the definition but we say libraries can be defined over distinct alphabets as long as they share $\Gamma$ which is the case in our week machine. Why don't we define refinement like that at the first place?}
 Let $L_1$ and $L_2$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$~\footnote{The two libraries could be defined over different alphabets as long as they share $\Gamma$.}. 
 %agreeing on $\mathcal{M}$ and $\mathcal{D}$ sets. We define the set $A\Sigma = \{inv(m,d,i)| m \in \mathcal{M} \wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\} \cup \{ret(m,d,i)| m \in \mathcal{M}\wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\}$ as abstract transition labels. Note that $A\Sigma \subseteq \Sigma_{L_1}$ and $A\Sigma \subseteq \Sigma_{L_2}$. 
 The library $L_1$ \emph{$\Gamma$-refines} $L_2$ if{f} $Tr(L_1) | \Gamma \subseteq Tr(L_2) | \Gamma$.
 %We say that $L_1$ \emph{refines} $L_2$ when $H(L_1) \subseteq H(L_2)$.
 %for every trace $e \in Tr(L_1)$, there exists a trace $e' \in Tr(L_2)$ such that $e|A\Sigma$ is equivalent to $e'|A\Sigma$.
 \end{dfn}
-The actions in $\Gamma$ are called \emph{observable actions}. Usually, $\Gamma$ consists only of call and return actions. As we show in the next sections, increasing the set of observable actions is useful in simplifying proofs of refinement.
+The actions in $\Gamma$ are called \emph{observable actions}. Usually, $\Gamma$ consists only of call and return actions \textcolor{red}{(For this case we say just refinement instead of $\Gamma-refinement$. We need to add this sentence since we say just refinement in Theorem 1.)}. As we show in the next sections, increasing the set of observable actions is useful in simplifying proofs of refinement.
 %Linearizability is also a relation between two libraries and it is stricter than refinement. It requires $e'$ in Definition 2 to be a sequential one. A trace $e$ is sequential iff following two conditions hold for its projection to abstract transition labels $e|A\Sigma = e_1, ...e_n$: $(i)$ $e_1 = inv(m,d,k)$ for some $m \in \mathcal{M}, d \in \mathcal{D} and k \in \mathbb{N}$ and $(ii)$ for all $i \in [1,n)$, either $e_i = inv(m,d,k)$ and $e_{i+1} = ret(m,d',k)$ or $e_i = ret(m,d,k)$ and $e_{i+1} = inv(m',d',k')$ for some $m,m' \in \mathcal{M}$, $d,d' \in \mathcal{D}$ and $k,k' \in \mathbb{N}$.
 
 Linearizability~\cite{journals/toplas/HerlihyW90} requires that 
@@ -246,6 +250,7 @@ completed operations, such that $h_1 \sqsubseteq h_2$. A library $L_1$
 is \emph{linearizable} w.r.t. $L_2$, written $L_1 \sqsubseteq L_2$, if{f}
 each history $h_1 \in H(L_1)$ is linearizable w.r.t. $L_2$.
 
+\textcolor{red}{An organizational concern: Do we really need the second definition of linearizability? I think our aim here is to introduce both refinement and linearizability and relate them via Thm 1. I cannot see any contribution of this part until Thm 1. You may ignore this message if I am missing something important about the second definition.}
 The weakening order w.r.t. sequential histories can be also defined  in terms of ~\emph{linearization points}. 
 %A linearization point 
 %corresponds to a transition in that
@@ -270,7 +275,7 @@ $h_2$ is a permutation of the history $h_1'$ obtained from $h_1$ by preserving o
 
 \end{theorem}
 
-We define a notion of \emph{forward} simulation whose existence implies refinement, and it is equivalent to refinement when the right-hand side library $L_2$ is deterministic. A dual notion of \emph{backward} simulation is defined in Appendix~\ref{app:backSim}. The existence of backward simulations is equivalent to refinement for arbitrary libraries.
+We define a notion of \emph{forward} simulation whose existence implies refinement, and it is equivalent to refinement when the right-hand side library $L_2$ is deterministic \textcolor{red}{(do we need to define deterministic?)}. A dual notion of \emph{backward} simulation is defined in Appendix~\ref{app:backSim}. The existence of backward simulations is equivalent to refinement for arbitrary libraries.
 %We define a notion of forward simulation that is a sound approximation of refinement and a notion of backward simulation that precisely characterizes refinement. 
 For a relation $R\subseteq A\times B$, $R[X]$ denotes the set of elements of $B$ related to elements of $X$ by $R$, i.e., $R[X]=\set{y:\exists x\in X.\ R(x,y)}$.
 
@@ -279,13 +284,13 @@ For a relation $R\subseteq A\times B$, $R[X]$ denotes the set of elements of $B$
 \begin{dfn}
 Let $L_1=(Q_1,\Sigma, q_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, q_0^2, \delta_2)$ be two libraries over a common alphabet $\Sigma$, and $\Gamma\subseteq \Sigma$ a set of actions such that $(C\cup R)\subseteq \Gamma$. A relation $\mathit{fs} \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$-forward simulation} from $L_1$ to $L_2$ iff the following holds:
 \begin{itemize}
-\item[(i)] $\mathit{fs}[s_0^1] = \{s_0^2 \}$
-\item[(ii-a)] If $(s,c,s') \in \delta_1$, for some $c\in C$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_0=c$, and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0<i<|@s|$.
+\item[(i)] $\mathit{fs}[s_0^1] = \{s_0^2 \}$ \textcolor{red}{Either we need to change $s_0^1$ to $q_0^1$ here or vice versa in the first line of the definition.}
+\item[(ii-a)] If $(s,c,s') \in \delta_1$, for some $c\in C$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_0=c$, and $@s_i\in \Sigma\setminus(C\cup R)$ \textcolor{red}{($@s_i\in \Sigma\setminus \Gamma$)}, for each $0<i<|@s|$.
 %$@s = a_1, a_2, ..., a_n$ such that $a_1 = inv(m,d,k)$ and for all $i \in [2,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. The expression $u \xrightarrow{a} u'$ means that there exists a sequence of states $u_1, u_2,...,u_{n+1}$ such that $u_1 = u$, $u_{n+1} = u'$ and for all $i \in [1,n]$, $(u_i, a_i, u_{i+1}) \in \delta_{L_2}$.
-\item[(ii-b)] If $(s,r,s') \in \delta_{1}$, for some $r\in R$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_{|@s| -1}=r$, and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s| -1$.
+\item[(ii-b)] If $(s,r,s') \in \delta_{1}$, for some $r\in R$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_{|@s| -1}=r$, and $@s_i\in \Sigma\setminus(C\cup R)$  \textcolor{red}{($@s_i\in \Sigma\setminus \Gamma$)}, for each $0\leq i<|@s| -1$.
 % where $a = a_1, a_2, ..., a_n$ such that $a_n = ret(m,d,k)$ and for all $i \in [1,n-1]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. 
-\item[(ii-c)] If $(s, \gamma , s') \in \delta_1$, for some $\gamma\in \Gamma\setminus (C\cup R)$, and $u \in fs[s]$, then there exists $u' \in fs[s']$ such that $u\xrightarrow{\gamma} u'  \in \delta_2$.
-\item[(ii-d)] If $(s,e,s') \in \delta_1$, for some $e \in \Sigma\setminus \Gamma$ and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{\sigma} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$, for each $0\leq i<|@s|$.
+\item[(ii-c)] If $(s, \gamma , s') \in \delta_1$, for some $\gamma\in \Gamma\setminus (C\cup R)$, and $u \in fs[s]$, then there exists $u' \in fs[s']$ such that $u\xrightarrow{\gamma} u'  \in \delta_2$. \textcolor{red}{$(u,\gamma, u') \in \delta_2$ instead of $u\xrightarrow{\gamma} u'  \in \delta_2$?)}
+\item[(ii-d)] If $(s,e,s') \in \delta_1$, for some $e \in \Sigma\setminus \Gamma$ and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{\sigma} u'$ and $@s_i\in \Sigma\setminus(C\cup R)$  \textcolor{red}{($@s_i\in \Sigma\setminus \Gamma$)}, for each $0\leq i<|@s|$.  \textcolor{red}{(All of the above changes also apply to the backward simulation definition in appendix.)}
 %where $a = a_1, a_2, ..., a_n$ such that for all $i \in [1,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. Moreover, $a$ could be the empty sequence.
 \end{itemize}
 \end{dfn}
