@@ -1,4 +1,94 @@
+%!TEX root = draft.tex
 \section{Relaxation for the Data Structures Without Fixed Remove Linearization Points}
+
+\subsection{Abstract stack implementation}
+
+The states of $AbsS$ are tuples $\tup{O,<,\ell,rval,cp}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked push operations), $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}\times 2^{\<Ops>}$ labels every identifier with a value, a flag that records whether the operation is pending or completed, and a set of operation identifiers (of pop operations which are allowed to take the value of any other push operation happening after this operation), $rval:\<Ops> ~> \<Vals>$ records the return value of a pending dequeue fixed at its linearization point, and $cp:\<Ops> ~> \<Nats>$ records the control point of every pending (enqueue or dequeue) operation.
+The initial state is $\tup{\emptyset,\emptyset,\emptyset,\emptyset,\emptyset}$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsQ}.
+
+\begin{figure} [t]
+{\footnotesize
+  \centering
+  \begin{mathpar}
+    \inferrule[call-push]{
+      k\not\in dom(cp) \\ 
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{inv(push,d,k)}
+      O\cup\{k\},<\cup \{(k',k): \ell_2(k')={\tt COMP}\},\ell[k\mapsto (d,{\tt PEND},\emptyset)],rval,cp[k\mapsto 1]
+    }\hspace{5mm}
+
+    \inferrule[call-pop]{
+      k\not\in dom(cp) \\
+      \forall k'\not\in maxCompl(<).\ \ell'(k') = \ell(k') \\
+      \forall k'\in maxCompl(<).\ \ell'(k') = (\ell_1(k'),\ell_2(k'),\ell_3(k')\cup\{k\}) \\
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{inv(pop,k)}
+      O,<,\ell',rval,cp[k\mapsto 1]
+    }\hspace{5mm}
+    
+    \inferrule[ret-pop]{
+       cp(k) = 2 \\
+       rval(k)=d  
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{ret(pop,d,k)}
+      O,<,\ell,rval,cp[k\mapsto 3]
+    }\hspace{5mm}
+
+    \inferrule[ret-push1]{
+      cp(k) = 1 \\
+      k \in O \\
+      \ell(k) = (d,{\tt PEND},X) 
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{ret(push,k)}
+      O,<,\ell[k\mapsto (d,{\tt COMP},X)],rval,cp[k\mapsto 2]
+    }\hspace{5mm}
+    
+    \inferrule[ret-push2]{
+      cp(k) = 1 \\
+      k \not\in O 
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{ret(push,k)}
+      O,<,\ell,rval,cp[k\mapsto 2]
+    }\hspace{5mm}
+
+    \inferrule[lin-pop1]{
+       cp(k) = 1 \\
+       d\neq{\tt EMPTY} \\
+       \exists k',k''\in O.\ k\in \ell_3(k') \land k'\leq k''\land \ell_1(k'')=d
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{lin(pop,d,k)}
+      O\setminus \{k\},<\uparrow k,\ell,rval[k\mapsto d],cp[k\mapsto 2]
+    }\hspace{5mm}
+
+    \inferrule[lin-deq2]{
+       cp(k) = 1 \\
+       O=\emptyset
+    }{
+      O,<,\ell,rval,cp
+      \xrightarrow{lin(deq,{\tt EMPTY},k)}
+      O,<,\ell,rval[k\mapsto {\tt EMPTY}],cp[k\mapsto 2]
+    }\hspace{5mm}
+
+    
+      \end{mathpar}
+  }
+ \vspace{-5mm}
+  \caption{The transition relation of $AbsQ$.}
+  \label{fig:transitions:AbsQ}
+\vspace{-6mm}
+\end{figure}
+
+
+\subsection{Other}
+
+
+
 We have observed that some implementations (like time-stamped stack) do not have fixed remove (pop) linearization points that will correspond to $lin(pop,e,k)$ where $e$ could be a data value or $\texttt{EMPTY}$. However, we observe that, these implementations contain some points in their pop methods that logically removes the element from the pool. We call them commit points. If a method of a library has a fixed linearization  point, it is also a commit point. In this sense, commit points are weaker versions of fixed linearization points. Fixed linearization point of a pop preserves the following properties:
 \begin{itemize}
 \item If a $ret$ comes before a linearization point in the concrete execution, this order is preserved in the linearization of this execution.
