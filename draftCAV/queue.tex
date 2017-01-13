@@ -8,7 +8,7 @@ The typical abstract implementation of a concurrent queue maintains a sequence o
 Informally, $AbsQ$ records the happens-before order between enqueue operations for which the added value has not been removed by a dequeue operation. The linearization point of a dequeue operation with return value $d\neq{\tt EMPTY}$ is enabled only if the happens-before order stored in the current state contains a minimal enqueue operation that adds the value $d$. The effect of the linearization point is that the minimal enqueue is removed from the current state and the return value is recorded in the library state. When the return value is {\tt EMPTY}, the linearization point of a dequeue is enabled only if the current state stores no enqueue operation. The return of a dequeue is enabled only if the returned value matches the one fixed at the linearization point.
 
 The states of $AbsQ$ are tuples $\tup{O,<,\ell,rval,cp}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked enqueue operations), $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a flag that records whether the operation is pending or completed, $rval:\<Ops> ~> \<Vals>$ records the return value of a pending dequeue fixed at its linearization point, and $cp:\<Ops> ~> \<Nats>$ records the control point of every pending (enqueue or dequeue) operation.
-The initial state is $\tup{\emptyset,\emptyset,\emptyset,\emptyset,\emptyset}$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsQ}.
+The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsQ}.
 
 \begin{figure} [t]
 {\footnotesize
@@ -92,6 +92,8 @@ $AbsQ$ is a refinement of $AbsQ_0$ and vice-versa.
 
 A library $L$ is called a \emph{queue implementation} when its alphabet consists of call and return actions defined over $\<Methods>=\{enq,deq\}$. Let $LP(deq)$ be the set of all actions $lin(deq,d,k)$ for some $d\in\<Vals>$ and $k\in\<Ops>$. A trace of a queue implementation is called $LP(deq)$-complete when every completed dequeue has a linearization point, i.e., TODO. A queue implementation $L$ over alphabet $\Sigma$ is called \emph{with fixed dequeue linearization points} if{f} $C\cup R\cup LP(deq)\subseteq \Sigma$ 
 and every trace $@t\in Tr(L)$ is $LP(deq)$-complete.
+
+TODO NEEDS DATA INDEPENDENCE FOR THE LINEARIZATION POINT TRANSITIONS TO BE DETERMINISTIC
 
 The following result shows that $C\cup R\cup LP(deq)$-forward simulations are a sound and complete proof method for showing the correctness of a queue implementation with fixed dequeue linearization points (up to the correctness of the linearization points). It is obtained from Theorem~\ref{th:absImplQueue} and Theorem~\ref{th:forSim} using the fact that the alphabet of $AbsQ$ is exactly $C\cup R\cup LP(deq)$ and $AbsQ$ is deterministic.
 
