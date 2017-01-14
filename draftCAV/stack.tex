@@ -108,11 +108,14 @@ and every trace $@t\in Tr(L)$ is $Com(pop)$-complete.
 
 TODO NEEDS DATA INDEPENDENCE FOR THE COMMIT POINT TRANSITIONS TO BE DETERMINISTIC
 
-As a consequence of Theorem~\ref{th:absImplStack} and Theorem~\ref{th:forSim}, $C\cup R\cup Com(pop)$-forward simulations are a sound and complete proof method for showing the correctness of a stack implementation with fixed pop commit points. 
+As a consequence of Theorem~\ref{th:forSim}, $C\cup R\cup Com(pop)$-forward simulations are a sound and complete proof method for showing the correctness of a stack implementation with fixed pop commit points (up to the correctness of the commit points). 
+
+TODO EXPLAIN THAT THIS IS DIFFERENT W.R.T. QUEUES ($Abs_0$ doesn't have commit points).
 
 \begin{corollary}
-A stack implementation $L$ with fixed pop commit points is a $C\cup R\cup Com(pop)$-refinement of $AbsS_0$ if{f} there exists a $C\cup R\cup Com(pop)$-forward simulation from $L$ to $AbsS$.
+A stack implementation $L$ with fixed pop commit points is a $C\cup R\cup Com(pop)$-refinement of $AbsS$ if{f} there exists a $C\cup R\cup Com(pop)$-forward simulation from $L$ to $AbsS$.
 \end{corollary}
+
 
 \subsection{A Correctness Proof For Time-Stamped Stack}
 
