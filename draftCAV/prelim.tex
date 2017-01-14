@@ -168,6 +168,8 @@ A library $L$ is called atomic if it has a sequential kernel.
 Atomic libraries are often considered as specifications for concurrent objects. 
 In practice, libraries can be made atomic by guarding their methods bodies with global lock acquisitions.
 
+A library $L$ is called a \emph{queue implementation} when its alphabet contains call and return actions defined over $\<Methods>=\{enq,deq\}$ ($enq$ is the name of the methods that enqueue a value, and $deq$ is the name of the methods that dequeue a value) and $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$ where {\tt EMPTY} is the value returned by $deq$ when the queue is empty. Similarly, a library $L$ is called a \emph{stack implementation} when $\<Methods>=\{push,pop\}$ and  $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$.
+
 
 %\begin{example}
 %  \label{ex:libraries}
