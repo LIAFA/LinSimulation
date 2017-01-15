@@ -76,3 +76,162 @@ Next, we will show that $fs$ is a forward simulation relation:
 \item[$\langle ii-b-deq \rangle$] Let $(q, ret(deq,d,k), q') \in \delta_A$ and $t \in fs[q]$. We pick $t'$ such that $(t, ret(deq,d,k), t') \in \delta_I$. We know that $so_t = so_{t'}$ and only change is $f_{t'}(k) = D_2$. Since we know that $s_q = s_{q'}$ and $f_{q'}(k) = D_2$, $t' \in fs[q']$ holds.  
 \end{itemize}
 \end{proof}
+
+\subsection{Herlihy \& Wing Queue Linearizability Proof}
+We will begin with formal description of HW Queue library $L_C$:
+\begin{itemize}
+\item States of the queue are forms of the tuple $(O_e, O_d, bck, itms, i, x, rng, cp)$ where $O_e, O_d \subseteq \mathcal{O}$ are disjoint sets of operation identifiers of enqueue and dequeue operations, respectively, $bck \in \mathbb{N}$ and $itms: \mathbb{N} \rightarrow \mathcal{D}$ are global variables of HW queue, $i: (O_e \cup O_d) \rightarrow \mathbb{N}$ and $(O_e \cup O_d) \rightarrow \mathcal{D}$ are local variables common to both enqueue and dequeue operations, although they are used for different purposes, $rng: O_d \rightarrow \mathbb{N}$ is a local variable for dequeue operations and $cp: \mathcal{O} \rightarrow \mathbb{N}$.
+\item Transition labels alphabet consists of the common $AQ\Sigma$ actions. In addition $enq1$, $enq2$ actions for enqueue and $deq1$, $deq2$, $deq3$ and $deq4$ operations for dequeue operations are added to these transition labels. Semantics of the new actions are derived from the algorithm directly and described in Figure~\ref{fig:transitions:HWQ}.
+\item Initial state is the configuration $(\emptyset, \emptyset, 0, \emptyset, \emptyset, \emptyset, \emptyset)$ where $\emptyset$ maps every element in the domain to $0$ or \texttt{EMPTY}, depending on the range or the domain is the empty set for functions.
+\item Figure~\ref{fig:transitions:HWQ} describes the derivation rules for $L_C$ based on the HW queue algorithm.
+\end{itemize} 
+
+We extract the derivation rules from the algorithm.
+
+\begin{figure} [t]
+{\footnotesize
+  \centering
+  \begin{mathpar}
+    \inferrule[call-enq]{
+      k\not\in dom(cp) \\ 
+      d \neq \texttt{EMPTY}\\
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{inv(enq,d,k)}
+      O_e\cup\{k\},O_d,bck, itms, i[k \mapsto 0], x[k \mapsto d], rng, cp[k \mapsto 1]
+    }\hspace{5mm}
+    
+    \inferrule[enq-1]{
+      k \in O_e \\
+      cp(k) = 1
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{enq1(k)}
+      O_e, O_d, bck+1, itms, i[k \mapsto bck], x, rng, cp[k \mapsto 2]
+    }
+    
+    \inferrule[enq-2]{
+      k \in O_e \\
+      cp(k) = 2
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{enq2(k)}
+      O_e, O_d, bck, itms[i(k) \mapsto x], i, x, rng, cp[k \mapsto 3]
+    }
+    
+    \inferrule[ret-enq]{
+      k \in O_e \\
+      cp(k) = 3
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{ret(enq,k)}
+      O_e, O_d, bck, itms, i, x, rng, cp[k \mapsto 4]
+    }
+    
+    \inferrule[call-deq]{
+      k\not\in dom(cp) \\ 
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{inv(deq,k)}
+      O_e, O_d \cup \{k\}, bck, itms, i[k \mapsto 0], x[k \mapsto 0], rng[k \mapsto 0], cp[k \mapsto 1]
+    }\hspace{5mm}
+    
+    \inferrule[deq-1]{
+      k\in O_d \\ 
+      cp(k) = 1 \\
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{deq1(k)}
+      O_e, O_d, bck, itms, i, x, rng[k \mapsto bck-1], cp[k \mapsto 2]
+    }\hspace{5mm}
+    
+    \inferrule[deq-2]{
+      k\in O_d \\ 
+      cp(k) = 2 \\
+      itms[i(k)] = \texttt{EMPTY} \\
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{deq2(k)}
+      O_e, O_d, bck, itms, i, x, rng, cp[k \mapsto 5]
+    }\hspace{5mm}
+    
+    \inferrule[lin-deq]{
+      k \in O_d \\ 
+      cp(k) = 2 \\
+      itms(i(k)) \neq \texttt{EMPTY} \\
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{lin(deq,items[i(k)],k)}
+      O_e, O_d, bck, itms[i(k) \mapsto \texttt{EMPTY}], i, x[k \mapsto itms[i(k)] ], rng, cp[k \mapsto 3]
+    }\hspace{5mm}
+    
+    \inferrule[deq-3]{
+      k\in O_d \\ 
+      cp(k) = 5 \\
+      i(k) = rng(k)-1\\
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{deq3(k)}
+      O_e, O_d, bck, itms, i[k \mapsto 0], x, rng, cp[k \mapsto 1]
+    }\hspace{5mm}
+    
+    \inferrule[deq-4]{
+      k\in O_d \\ 
+      cp(k) = 5 \\
+      i(k) < rng(k)-1\\
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{deq4(k)}
+      O_e, O_d, bck, itms, i[k \mapsto i(k)+1], x, rng, cp[k \mapsto 2]
+    }\hspace{5mm}
+    
+    \inferrule[ret-deq]{
+       k \in O_d \\
+       cp(k) = 3 \\  
+    }{
+      O_e, O_d, bck, itms, i, x, rng, cp
+      \xrightarrow{ret(deq,x,k)}
+      O_e, O_d, bck, itms, i, x, rng, cp[k \mapsto 4]
+    }\hspace{5mm}
+    
+      \end{mathpar}
+  }
+ \vspace{-5mm}
+  \caption{The transition relation of $HWQ$.}
+  \label{fig:transitions:HWQ}
+\vspace{-6mm}
+\end{figure}
+
+Then, we proceed to prove linearizability of $L_C$.
+\begin{lem}
+$L_C$ is a q-refinement of $L_I$.
+\end{lem}
+\begin{proof}
+Since $L_I$ is deterministic w.r.t. alphabet $AQ\Sigma$, there exists a forward simulation relation form $L_C$ to $L_I$ if $L_C$ is a refinement of $L_I$. We will define the relation $fs$ and show that it is a forward simulation relation.
+
+The relation $fs$ relates $q = (O_e, O_d, bck, itms, i,x, rng, cp) \in Q_C$ to the state $q'=(O,<,\ell,rval,cp') \in Q_I$ iff:
+\begin{enumerate}
+\item For all $k \in O_e$, if $cp(k) \in \{1,2\}$, then $cp'(k) = 1$; if $cp(k) = 3$ then $cp'(k)=2$. For all $k \in O_d$, if $cp(k) \in \{1,2,5\}$, then $cp'(k) = 1$; if $cp(k) = 3$, then $cp'(k)=2$ and if $cp(k)=4$, then $cp'(k)=3$. 
+\item $k \in O$ iff $k \in O_e$; and $cp(k) \in \{1,2\}$ or $cp(k) \in \{3,4\} \wedge itms(i(k)) \neq \texttt{EMPTY}$.
+\item $\ell(k)= (d, \texttt{PEND})$ iff $cp(k) \in \{1,2\}$ or $cp(k) =3 \wedge itms(i(k)) \neq \texttt{EMPTY}$; and $x(k) = d$ and $k \in O_e$. $\ell(k) = (d,\texttt{COMP}$ iff $k \in O_e$, $cp(k) = 4$, $itms(i(k)) \neq \texttt{EMPTY}$ and $x(k)=d$. 
+\item $rval(k)=d$ if $k \in O_d$, $cp[k] = 3$ and $x(k) = d$.
+\item $<$ is a strict partial order and if second field of $\ell(k)$ is \texttt{PEND} for some $k \in O$, then $k$ is maximal in $<$.
+\item For two nodes $m,n \in O$ such that $cp(m), cp(n) > 1$, if $i(m) > i(n)$ then $m \nless n$.
+\item Let $m,n \in O$ be two nodes such that $i(m) < i(n)$ and $cp(m), cp(n) > 1$. If there exists a dequeue operation identifier $k \in O_d$ such that $cp(k) \in \{2,5 \}$ such that $i(m) < i(k) \leq i(n)$ and $i(n) < rng(k)$, then $m \nless n$.
+\end{enumerate}
+Next, we show that $fs$ is a forward simulation relation:
+\begin{itemize}
+\item[$\langle i \rangle$] $fs[{q_0}_C] = \{ {q_0}_I \}$
+\item[$\langle ii-a-enq \rangle$] Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{call-enq} rule of $L_C$ and $t \in fs[q]$. Premise of \textsc{call-enq} rule of $L_I$ holds for $t$ due to premise of \textsc{call-enq} rule of $L_C$ and item 1 in definition of $fs$. Let $t'$ be the state obtained by applying \textsc{call-enq} to $t$. One can observe that $t' \in fs[q']$ by checking the conditions of the $fs$ stated above. Condition $5$ holds because the newly added element $k$ which is \texttt{PEND}  does not occur on the left side of $<_{t'}$ relation and rules of strict partial order is preserved on $<_{q'}$. Conditions to re-check: 1, 2, 3 and 5. 
+\item[$\langle ii-a-deq \rangle$] Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{call-deq} rule of $L_C$ and $t \in fs[q]$. Premise of \textsc{call-deq} rule of $L_I$ holds for $t$ due to premise of \textsc{call-deq} rule of $L_C$ and item 1 in definition of $fs$. Let $t'$ be the state obtained by applying \textsc{call-deq} to $t$. One can observe that $t' \in fs[q']$ by checking the conditions of the $fs$ stated above. Conditions to re-check: 1.
+\item[$\langle ii-c-enq1 \rangle$] Let $q' \in Q_C$ obtained from $q  \in Q_C$ by applying \textsc{enq-1} rule of $L_C$ and $t \in fs[q]$. Pick $t' = t$. We still have $t' \in fs[q']$. Conditions 1-5 are trivial to check. Conditions $6$ and $7$ still hold because $i_{q'}(k) = bck_{q'}$. Conditions to re-check: 1, 2, 3, 6 and 7.
+\item[$\langle ii-c-enq2 \rangle$] Let $q' \in Q_C$ obtained from $q  \in Q_C$ by applying \textsc{enq-2} rule of $L_C$ and $t \in fs[q]$.  Pick $t' = t$. One can see that $t'=t \in fs[q']$ by checking conditions 1-7. Conditions to re-check: 1, 2, and 3.
+\item[$\langle ii-c-deq1 \rangle$]Let $q' \in Q_C$ obtained from $q  \in Q_C$ by applying \textsc{deq-1} rule of $L_C$ and $t \in fs[q]$.  Pick $t' = t$. One can see that $t'=t \in fs[q']$ by checking conditions 1-7. Nontrivial case is condition $7$ and it still holds since one can see that $i_{q'}(k) =0$, although $rng_{q'}(k)$ is assigned to a new higher value. Conditions to re-check: 1 and 7.
+\item[$\langle ii-c-deq2 \rangle$]Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{deq-2} rule of $L_C$ and $t \in fs[q]$.  Pick $t' = t$. One can see that $t'=t \in fs[q']$ by checking conditions 1-7. Conditions to re-check: 1.
+\item[$\langle ii-c-deq3 \rangle$]Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{deq-3} rule of $L_C$ and $t \in fs[q]$.  Pick $t' = t$. One can see that $t'=t \in fs[q']$ by checking conditions 1-7. Only non-trivial case is condition $7$. Since $i_{q'}(k) = 0$, it cannot impose an extra restriction and it continues to hold. Conditions to re-check: 1 and 7.
+\item[$\langle ii-c-deq4 \rangle$]Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{deq-4} rule of $L_C$ and $t \in fs[q]$.  Pick $t' = t$. We still have $t' \in fs[q']$. Only non-trivial case to check is condition $7$. Let $m,n \in O$ such that $i_{t'}(m) < i_{t'}(k) \leq i_{t'}(n)$ and $m <_{t'} n$ which violates condition 7. Since condition 7 is not violated while constructing $t$ and applying \textsc{deq-4} increments $i$ by one, the only possible case is $i_{t'}(m) = i_{t'}(k)-1$ and $m <_t n$ holds. One can see that this information implies $itms_t(i_t(m)) \neq \texttt{EMPTY}$ and $i_t(m) = i_t(k)$. We also know that at the previous step of dequeue with identifier $k$, $itms(i(k))$ was $\texttt{EMPTY}$ since the operation $k$ moved to control point $5$. Hence, the \textsc{enq-2} and \textsc{ret-enq} derivations of enqueue operation $m$ must be between the \textsc{deq-2} and current \textsc{deq-5} derivations of $k$. Then, we can also observe that $i_t(n) = i_{t'}(n) \geq rng_t(n) = rng_{t'}=n$ which contradicts our initial assumption. Conditions to re-check: 1 and 7.
+\item[$\langle ii-d \rangle$]Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{lin-deq} rule of $L_C$ and $t \in fs[q]$. Premise of the rule \textsc{lin-deq1} of $L_I$ holds for $t$ because of the premise of the rule \textsc{lin-deq} of $L_A$ and conditions on $L_C$. More specifically, one can show that there exists an operation $k' \in O_t$ such that $i_q(k') = i_q(k)$. Conditions $6$ and $7$ imply that there is no enqueue operation $k'' \in O_t$ such that $cp_q(k'') \in \{2,3,4\}$ and $k'' <_t k'$. Condition 3 and 5 imply that there is no enqueue operation $k'' \in O_t$ such that $cp_q(k') = 1$ and $k'' <_t k'$. Last two statements imply that $k'$ is minimal. Let $t'$ be the state obtained by appyling \textsc{lin-enq1} to $t$. One can see that $t' \in fs[q']$ by checking the conditions of $fs$. Conditions to re-check: 1, 2, 3, 4 and 5.
+\item[$\langle ii-b-enq \rangle$] Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{ret-enq} rule of $L_C$ and $t \in fs[q]$. We consider two cases while constructing $t'$. If $k \in O_t$, then premises of \textsc{ret-enq1} rule of $L_I$ holds due to premises of \textsc{ret-enq} and conditions of $fs$ and we obtain $t'$ by applying this rule to $t$. One can see that $t' \in fs[q']$ still holds by checking the conditions. Conditions to re-check:1, 2 and 3. The latter case is $k \notin O_t$. The premises of \textsc{ret-enq2} are still satisfied by $t$ since $q$ satisfies premises of \textsc{ret-enq} of $L_C$ and $t \in fs$. We obtain $t'$ by applying \textsc{ret-enq2} to $t$. One can observe that $t' \in fs[q']$ by checking the conditions on $fs$. Conditions to re-check: 1.
+\item[$\langle ii-b-deq \rangle$] Let $q' \in Q_C$ obtained from $q \in Q_C$ by applying \textsc{ret-deq} rule of $L_C$ and $t \in fs[q]$. State $t$ satisfies premises of the rule \textsc{ret-deq} of $L_I$ since $q$ satisfies premises of the rule \textsc{ret-deq} of $L_C$ and $t \in fs[q]$. We apply \textsc{ret-deq} rule of $L_I$ to $t$ to obtain $t'$.  One can see that $t' \in fs[q']$ by checking the conditions on $fs$. Conditions to re-check: 1.
+\end{itemize}
+\end{proof}

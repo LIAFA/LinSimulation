@@ -10,6 +10,23 @@
 \usepackage{amsthm}
 \usepackage{color}
 
+\usepackage{amsfonts}
+\usepackage{xspace}
+\usepackage{latexsym}
+\usepackage{wasysym} % causing problems with llncs's bold vectors
+\usepackage{stmaryrd}
+\usepackage{alltt}
+\usepackage{mathpartir}
+\usepackage[ligature,reserved,inference]{semantic}
+\usepackage[lined]{algorithm2e}
+\def\ttat{\mtt{@}} % the at package clobbers this
+\usepackage{at}
+\usepackage{alltt}
+
+%\usepackage[numbers]{natbib}
+
+%\input macros
+
 \newtheorem{dfn}{Definition}
 \newtheorem{lem}{Lemma}
 
@@ -18,6 +35,7 @@
 \maketitle
 \input{prelim}
 \input{queue}
+
 \section{Existence of Forward Simulations for Stack Implementations that have Fixed Pop Linearization Points}
 \input{commit}
 \input{set}
