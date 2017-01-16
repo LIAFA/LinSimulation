@@ -23,12 +23,23 @@
 \def\ttat{\mtt{@}} % the at package clobbers this
 \usepackage{at}
 \usepackage{alltt}
-
+\usepackage{listings}
+\usepackage[lined]{algorithm2e}
+\usepackage{wrapfig}
 %\newcommand{\xRightarrow}[2][]{\ext@arrow 0359\Rightarrowfill@{#1}{#2}}
+
+\usepackage{pslatex}
 
 \usepackage[numbers]{natbib}
 
 \input macros
+\input macros-programs
+
+\lstset{
+  language={Java},
+  basicstyle=\ttfamily\scriptsize
+}
+
 
 \newtheorem{dfn}{Definition}
 \newtheorem{lem}{Lemma}

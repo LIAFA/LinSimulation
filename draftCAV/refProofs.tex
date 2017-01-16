@@ -2,23 +2,41 @@
 
 \section{Refinement Proofs}
 
-Refinement between two libraries $L_1$ and $L_2$ (and thus, linearizability) can be proved using simulation relations which roughly, require that 
-the library $L_2$ can mimic every step of $L_1$ using a (possibly empty) sequence of steps. Mainly, there are two kinds of simulation
-relations, forward or backward depending on whether the preservation of steps is proved starting from a similar state
-forward or backward. In general, forward simulations are easier to establish, but they are incomplete, i.e., refinement may hold while
-there exists no forward simulation. On the other hand, proofs based on backward simulations are more difficult, but modulo the
-addition of history variables (auxiliary variables recording events in the implementation) backward simulations are complete for 
-proving refinement~\footnote{Adding history variables has no impact on the incompleteness of forward simulations.}.
+Library refinement is the instance of a more general notion of refinement between LTSs
+which for some alphabet $\Gamma$ of \emph{observable actions} is defined as the inclusion of sets of 
+traces projected on $\Gamma$. Library refinement corresponds to the case $\Gamma=C\cup R$. 
+Typically, $\Gamma$-refinement between two LTSs $A$ and $B$ is proved using \emph{simulation relations} which roughly, require that 
+$B$ can mimic every step of $A$ using a (possibly empty) sequence of steps. Mainly, there are two kinds of simulation
+relations, forward or backward, depending on whether the preservation of steps is proved starting from a similar state
+forward or backward. It has been shown
+that $\Gamma$-refinement is equivalent to the existence of \emph{backward simulations}, modulo the addition of history variables
+that record events in the implementation, and to the existence of \emph{forward simulations} provided that the right-hand side
+LTS $B$ is $\Gamma$-deterministic~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}. 
+We focus on proofs based on forward simulations because they are easier to automatize.
 
-This section introduces notions used to enlarge the scope of proofs based on forward simulations, which is the main goal of this paper.
-We first introduce a stronger notion of refinement that compares the set of traces of two libraries projected
-on a larger alphabet of actions than the set of call/return actions. These actions are called \emph{observable actions},
-and they may represent for instance, linearization points which informally, are points in time where an operation 
-is conceptually effectuated. We then define a notion of forward simulation which is complete for proving
-this notion of refinement provided that the alphabet of the ``abstract'' library $L_2$ equals the set of 
-observable actions and $L_2$ is deterministic. We discuss an application of this result, namely,
-proving the correctness of libraries with ``fixed linearization points'', where the so-called ``linearization points''
-are fixed to particular implementation actions.
+In general, forward simulations are \emph{not} a complete proof method for library refinement because libraries are not 
+$C\cup R$-deterministic (the same sequence of call and 
+return actions can lead to different states depending on the interleaving of the internal actions).
+However, there are classes of atomic libraries, e.g., libraries with ``fixed linearization points'' (defined later in this section), 
+for which it is possible to identify a larger alphabet $\Gamma$ of observable actions (including call/return actions), 
+and implementations that are $\Gamma$-deterministic. When focusing on queues and stacks, 
+Section~\ref{sec:queues} and Section~\ref{sec:stacks} define other such classes of implementations that cover
+all the implementations that we are aware of.
+
+%Refinement between two libraries $L_1$ and $L_2$  can be proved using  In general, forward simulations are easier to establish, but they are incomplete, i.e., refinement may hold while
+%there exists no forward simulation. On the other hand, proofs based on backward simulations are more difficult, but modulo the
+%addition of history variables (auxiliary variables recording events in the implementation) backward simulations are complete for 
+%proving refinement~\footnote{Adding history variables has no impact on the incompleteness of forward simulations.}. 
+
+%This section introduces notions used to enlarge the scope of proofs based on forward simulations, which is the main goal of this paper.
+%We first introduce a stronger notion of refinement that compares the set of traces of two libraries projected
+%on a larger alphabet of actions than the set of call/return actions. These actions are called \emph{observable actions},
+%and they may represent for instance, linearization points which informally, are points in time where an operation 
+%is conceptually effectuated. We then define a notion of forward simulation which is complete for proving
+%this notion of refinement provided that the alphabet of the ``abstract'' library $L_2$ equals the set of 
+%observable actions and $L_2$ is deterministic. We discuss an application of this result, namely,
+%proving the correctness of libraries with ``fixed linearization points'', where the so-called ``linearization points''
+%are fixed to particular implementation actions.
 
 \begin{dfn}\label{def:gref}
 Let $L_1$ and $L_2$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, respectively, such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
@@ -54,7 +72,7 @@ A $\Gamma$-forward simulation shows that every step of $L_1$ corresponds to a (p
 
 The following lemma shows the soundness and the completeness of $\Gamma$-forward simulations.
 \begin{theorem}\label{th:forSim}
-Let $L_1$ and $L_2$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, respectively, such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. If there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$, then $L_1$ $\Gamma$-refines $L_2$. Moreover, if $L_1$ $\Gamma$-refines $L_2$, $\Gamma=\Sigma_2$, and $L_2$ is deterministic, then there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$.
+Let $L_1$ and $L_2$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, respectively, such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. If there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$, then $L_1$ $\Gamma$-refines $L_2$. Moreover, if $L_1$ $\Gamma$-refines $L_2$ and $L_2$ is $\Gamma$-deterministic, then there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$.
 \end{theorem}
 \begin{proof}
 TODO
@@ -92,9 +110,9 @@ and every trace $@t\in Tr(L)$ is $Lin$-complete.
 
 Proving the correctness of an implementation $L_1$ of a concurrent object such as a queue or a stack with fixed linearization points
 reduces to proving that $L_1$ is a $(C\cup R\cup Lin)$-refinement of an abstract implementation $L_2$ of the same object where method
-bodies are guarded with a global-lock acquisition. Assuming that the abstract implementation is deterministic, which is typically the case,
+bodies are guarded with a global-lock acquisition. Assuming that the abstract implementation is $(C\cup R\cup Lin)$-deterministic, which is typically the case,
 by Theorem~\ref{th:forSim}, proving $(C\cup R\cup Lin)$-refinement is equivalent to finding a $(C\cup R\cup Lin)$-forward simulation 
-from $L_1$ to $L_2$~\footnote{Note that the alphabet of $L_2$ is exactly $C\cup R\cup Lin$.}.
+from $L_1$ to $L_2$.
 
-The next sections extend this result to implementations of queues and stacks where the linearization point of the methods 
+Section~\ref{sec:queues} and Section~\ref{sec:stacks} extend this result to implementations of queues and stacks where the linearization point of the methods 
 that \emph{add} values to the collection is \emph{not} fixed.

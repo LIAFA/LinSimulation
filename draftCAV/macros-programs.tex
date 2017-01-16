@@ -1,0 +1,28 @@
+
+
+\lstnewenvironment{program}{%
+  %% XXX - need this to keep the computer modern bf+tt font for programs!!
+  \renewcommand{\rmdefault}{cmr}%
+  \lstset{%
+    language={program},
+    basicstyle=\scriptsize,
+    % flexiblecolumns=true,
+    columns=flexible,
+%     keepspaces=true,
+%     frame=single,
+%     framexleftmargin=8mm,
+%     numberblanklines=false,
+    breaklines=true,
+    % breakatwhitespace=true,,
+    tabsize=4,
+    escapeinside={(*@}{@*)}
+%     showspaces=true,
+%     showtabs=true,
+%     tab=\rightarrowfill,
+%     lineskip=0.5em,
+  }
+}{}
+
+\lstset{language={program}}
+\lstMakeShortInline"
+

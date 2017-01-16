@@ -1,10 +1,32 @@
+\newcommand{\progAt}[1]{{#1}_{at}}
+\newcommand{\progBFS}[1]{{#1}_{\mathit{bfs}}}
+\newcommand{\progCan}[1]{{#1}_{can}}
+\newcommand{\progSync}[1]{{#1}_{sync}}
+\newcommand{\progEvent}[1]{{\prog[#1]}}
+\newcommand{\instr}[1]{Instr({#1})}
+\newcommand{\correct}{asynchronously-atomic}
+\newcommand{\ccorrectness}{Asynchronous atomicity}
+\newcommand{\correctness}{asynchronous atomicity}
+\newcommand{\cA}{{\mathcal A}}
+\newcommand{\vass}{\mathcal{A}}
+\newcommand{\nv}{\vec{n}}
+\newcommand{\ov}{\vec{0}}
+\def\prog{{P}}
+\def\proc{{p}}
+\def\event{p}
+\def\eventVar{{\texttt{Events}}}
+\def\tM{{\tt M}}
+\def\tMi{{\tt M\_inc}}
+\def\tMd{{\tt M\_dec}}
+\newcommand{\co}{\prec}
+
 
 \newcommand{\stacklabel}[1]{\stackrel{\smash{\scriptscriptstyle \mathrm{#1}}}}
 \newcommand{\Def}{\stacklabel{def}}
 \newcommand{\db}[1]{\llbracket{#1}\rrbracket}
 \newcommand{\parens}[1]{\ensuremath{\left( {#1} \right)}}
 \newcommand{\brackets}[1]{\ensuremath{\left[ {#1} \right]}}
-\newcommand{\angles}[1]{\ensuremath{\left\langle {#1} \right\rangle}}
+\newcommand{\angles}[1]{\ensuremath{\langle {#1} \rangle}}
 \newcommand{\fangles}[1]{\ensuremath{\langle {#1} \rangle}}
 \newcommand{\lines}[1]{\ensuremath{\left| {#1} \right|}}
 \newcommand{\A}[1]{\forall{#1}.\ }
@@ -38,7 +60,7 @@
 \mathlig{|->}{\mapsto}
 \mathlig{<-}{\gets}
 \mathlig{->}{\mathbin{\rightarrow}}
-\mathlig{~>}{\mathbin{\rightharpoonup}}
+\mathlig{~>}{\mathbin{\leadsto}}
 \mathlig{..}{\ldots}
 \mathlig{/|}{\land}
 \mathlig{|/}{\lor}
@@ -116,29 +138,69 @@
 
 \reservestyle{\semanticdomain}{\semanticdomainstyle} 
 
+\newcommand{\proglangkeywordstyle}[1]{\ensuremath{\mathbf{#1}}\xspace}
+\reservestyle{\proglangkeyword}{\proglangkeywordstyle}
+
 \mathfn{min,max,log,dom,range}
 
 \semanticdomain{%
   Bools[\mathbb{B}],
   Nats[\mathbb{N}],
   Lab[\mathbb{A}],
-  Ints[\mathbb{Z}]
+  Ints[\mathbb{Z}],
+  Reads[\mathbb{R}],
+  Writes[\mathbb{W}],
+  Events[\mathbb{E}],
+  Confs[\mathbb{C}]
 }
 
 %%% LOCAL MACROS
 
 \semanticdomain{%
   Methods[\mathbb{M}],
-  Vals[\mathbb{D}],
+  Vals[\mathbb{V}],
   Labels[\mathbb{L}],
-  Ops[\mathbb{O}]
+  Ops[\mathbb{O}],
+  Acts[\mathbb{A}],
+}
+
+\semanticdomain{%
+  Vars, Vals, Ids[IDs],
+  Frames, Stmts, Tasks, Configs, MsgQueues, Locks,
+}
+  
+\lstdefinelanguage{bpl}{%
+  keywords={%
+    procedure,var,int,while,assume,assert,true,false,call,return,newLock,acquire,release,
+  },
+  morecomment=[l]{//},
+}
+
+\lstdefinelanguage{program}{%
+  keywords={%
+    var,const,bool,int,true,false,%
+    while,do,if,then,else,assume,assert,proc,call,return,%
+    task,async,yield,wait,%
+  },
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morecomment=[n]{(*}{*)},
+  mathescape=true,
+  escapeinside=`',
+}
+
+\proglangkeyword{%
+  var, const, bool, int, true, false,
+  while[while\ ], do[\ do\ ], if[if\ ], then[\ then\ ], else[\ else\ ],
+  assume[assume\ ], return[return\ ], proc, call[call\ ], async, goto
+  newThread, newLock, acquire, release, sendMsg[sendMsg\ ]
 }
 
 \metalangkeyword{true,false}
 \metalangkeyword{ret,op}
 \mathfn{past,future,width}
 \metalangkeyword{push,pop}
-\metalangkeyword{read,write}
+\metalangkeyword{read,write,eventId,id,main}
 
 \newcommand{\match}{\mathbin{\mapstochar\relbar\mapsfromchar}}
 \newcommand{\call}[2]{{\ensuremath{#1_{#2}}}}

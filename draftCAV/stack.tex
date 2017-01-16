@@ -1,5 +1,5 @@
 %!TEX root = draft.tex
-\section{Stacks With Fixed Pop Commit Points}
+\section{Stacks With Fixed Pop Commit Points}\label{sec:stacks}
 
 While the abstract queue implementation in Section~\ref{sec:queues} can be adapted to stacks~\footnote{The only modification is that the linearization point of a pop $lin(pop,d,k)$ with $d\neq{\tt EMPTY}$ is enabled only if $k$ is added by a push which is maximal in the happens-before order stored in the state.}, it can not simulate (through forward simulations) existing stack implementations like the Time-stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} where the linearization points of the pop operations are not fixed. In this section, we define an abstract implementation which simulates such implementations provided that the point in time where the return value of a pop operation is determined corresponds to a fixed action. To demonstrate the use of this abstract implementation we provide a correctness proof for a simplified version of Time-Stamped Stack that preserves its most complex behaviors.
 
@@ -75,7 +75,7 @@ The initial state has all these components set to $\emptyset$ and the transition
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{com(pop,d,k)} \\
-      O\setminus \{k\},<\uparrow k,\ell,rv[k\mapsto d],cp[k\mapsto 2],be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}],ov
+      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto 2],be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}],ov
     }\hspace{5mm}
 
     \inferrule[lin-pop2]{

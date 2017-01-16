@@ -22,7 +22,9 @@ The projection $@t| \Gamma$ of a sequence $@t$ is the maximum subsequence of $@t
 A \emph{trace} of $A$ is the projection $\rho | \Sigma$ of an execution $\rho$ of $A$. 
 The set of executions, resp., traces, of an LTS $A$ is denoted by $E(A)$, resp., $Tr(A)$.
 An LTS is \emph{deterministic} if for any state $s$ and any sequence $@t\in \Sigma^*$, there is at most
-one state $s'$ such that $s\xrightarrow{@t}s'$.
+one state $s'$ such that $s\xrightarrow{@t}s'$. More generally, for an alphabet $\Gamma\subseteq \Sigma$,
+an LTS is \emph{$\Gamma$-deterministic} if for any state s and any sequence $@t\in \Gamma^*$, there
+is at most one state $s'$ such that $s\xrightarrow{@t'}s'$ and $@t$ is a subsequence of $@t'$.
 
 \subsection{Libraries}
 
@@ -225,7 +227,7 @@ using $L_1$ would also be possible were $L_2$ used instead. We assume that a pro
 interact with the library only through call and return actions, and thus refinement can be defined
 as history set inclusion. As shown in~\citet{journals/tcs/FilipovicORY10,DBLP:conf/popl/BouajjaniEEH15},
 refinement is equivalent to the \emph{linearizability} criterion~\cite{journals/toplas/HerlihyW90} when $L_2$ is an atomic library. 
-We fix a set of methods $\<Methods>$ and values $\<Vals>$.
+%We fix a set of methods $\<Methods>$ and values $\<Vals>$.
 
 \begin{dfn}
 Let $L_1$ and $L_2$ be two libraries. 
@@ -239,14 +241,11 @@ The library $L_1$ \emph{refines} $L_2$ if{f} $H(L_1) \subseteq H(L_2)$.
 
 Linearizability~\cite{journals/toplas/HerlihyW90} requires that every history of a concurrent library $L_1$ can be 
 ``linearized'' to a sequential history admitted by a library $L_2$ used as a specification. 
-Formally, a history $h_1$ is \emph{linearizable} w.r.t.~a library $L_2$ if{f} there exists a sequential history
-$h_2 \in H(L_2)$, with only
-completed operations, such that $h_1 \sqsubseteq h_2$. A library $L_1$
+Formally, a sequential history $h_2$ with only complete operations is called a \emph{linearization} of a history $h_1$ when $h_1 \sqsubseteq h_2$.
+A history $h_1$ is \emph{linearizable} w.r.t.~a library $L_2$ if{f} there exists a linearization $h_2$ of $h_1$ such that 
+$h_2 \in H(L_2)$. A library $L_1$
 is \emph{linearizable} w.r.t. $L_2$, written $L_1 \sqsubseteq L_2$, if{f}
 each history $h_1 \in H(L_1)$ is linearizable w.r.t. $L_2$.
-
-
-
 
 \begin{theorem}[\cite{journals/tcs/FilipovicORY10,DBLP:conf/popl/BouajjaniEEH15}]
   $L_1 \sqsubseteq L_2$ if{f} $L_1$ refines $L_2$,
@@ -254,6 +253,5 @@ each history $h_1 \in H(L_1)$ is linearizable w.r.t. $L_2$.
 
 \end{theorem}
 
-TODO MAKE THE CONNECTION WITH THE NEXT SECTION
-
+In the rest of the paper, we discuss methods for proving refinement (and thus, linearizability) focusing mainly on queue and stack implementations.
 
