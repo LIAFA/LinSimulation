@@ -1,14 +1,15 @@
 %!TEX root = draft.tex
 \section{Queues With Fixed Dequeue Linearization Points}\label{sec:queues}
 
-The typical abstract implementation of a concurrent queue, denoted by $AbsQ_0$, maintains a sequence of values, the enqueue method adds a value atomically to the beginning of the sequence, and the dequeue method removes a value from the end of the sequence (if any, otherwise it returns ``empty''). In this section, we describe another abstract implementation, denoted as $AbsQ$, which roughly maintains a \emph{partially-ordered set} of values instead of a sequence. We show that there exists a forward simulation from any correct queue implementation where the \emph{dequeue} methods have fixed linearization points (the enqueue methods are unconstrained) to $AbsQ$. This covers all the queue implementations that we are aware of. We describe a forward simulation from the Herlihy\&Wing queue~\cite{journals/toplas/HerlihyW90} to $AbsQ$.
+The typical abstract implementation of a concurrent queue, denoted by $AbsQ_0$, maintains a sequence of values, the enqueue method adds a value atomically to the beginning of the sequence, and the dequeue method removes a value from the end of the sequence (if any, otherwise it returns ``empty''). In this section, we describe another abstract implementation, denoted as $AbsQ$, which roughly maintains a \emph{partially-ordered set} of values instead of a sequence. We show that there exists a forward simulation from any correct queue implementation where the \emph{dequeue} methods have fixed linearization points (the enqueue methods are unconstrained) to $AbsQ$. This covers all the queue implementations that we are aware of. We describe a forward simulation from the Herlihy\&Wing Queue~\cite{journals/toplas/HerlihyW90} to $AbsQ$.
 
 \subsection{Abstract Queue Implementation}
 
-Before describing our abstract implementation $AbsQ$, we present an example of a queue implementation where only the dequeue methods have fixed linearization points, namely the Herlihy \& Wing queue~\cite{journals/toplas/HerlihyW90} listed in Figure~\ref{fig:HerlihyWing} (we assume that every statement is atomic).
+Before defining the abstract implementation $AbsQ$, we describe a queue implementation listed in Figure~\ref{fig:HerlihyWing} and known as the Herlihy \& Wing Queue~\cite{journals/toplas/HerlihyW90} ($\mathit{HWQ}$ for short), 
+where only the dequeue methods have fixed linearization points. 
 
 \begin{wrapfigure}{l}{5.7cm}
-%\vspace{-8mm}
+\vspace{-8mm}
 \begin{lstlisting}
 void enq(int x){
   i = back++;
@@ -26,47 +27,45 @@ int deq() {
 }
   \end{lstlisting}
 \vspace{-5mm}
-\caption{Herlihy \& Wing queue.}
+\caption{Herlihy \& Wing Queue. We assume that every statement is atomic.}
 \label{fig:HerlihyWing}
 \vspace{-6mm}
 \end{wrapfigure}
-The shared state consists of an array {\tt items} storing values in the queue and a counter {\tt back} storing the index of the first unused position in {\tt items}. Initially, all the positions in the array are {\tt null} and {\tt back} is 0.
-An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position can't be used by other enqueue operations) and then, storing the input value {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
+The shared state consists of an array {\tt items} storing the values in the queue and a counter {\tt back} storing the index of the first unused position in {\tt items}. Initially, all the positions in the array are {\tt null} and {\tt back} is 0.
+An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position can't be used by other enqueue operations) and then, stores the input value {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
 
-The linearization points of the enqueue methods are not fixed, they depend on dequeue operations executing in the future. Consider the following trace with two concurrent enqueues (the local variables of operation $k$ are indexed by $k$):
+The linearization points of the enqueue methods are not fixed, they depend on dequeue operations executing in the future. Consider the following trace with two concurrent enqueues (${\tt i}(k)$ represents the value of {\tt i} in operation $k$):
 \begin{align*}
-inv(enq,x,1)\ \ \ inv(enq,y,2)\ \ \ {\tt i}_1 = \mbox{{\tt bck++}}\ \ \ {\tt i}_2 = \mbox{{\tt bck++}}\ \ \ {\tt items[i_2]} = y
+inv(enq,x,1)\ \ \ inv(enq,y,2)\ \ \ {\tt i}(1) = \mbox{{\tt bck++}}\ \ \ {\tt i}(2) = \mbox{{\tt bck++}}\ \ \ {\tt items[i(2)]} = y
 \end{align*}
 %\begin{align*}
 %inv(enq,x,1)\ inv(enq,y,2)\ ({\tt i}_1 = 0,{\tt bck} = 1)\ ({\tt i}_2 = 1,{\tt bck} = 2)\ ({\tt items[1]} = y)
 %\end{align*}
-Assuming that the linearization point corresponds to the assignment of {\tt i}, the history of this trace should be linearized to $inv(enq,x,1)\ ret(enq,1)\ inv(enq,y,2)\ ret(enq,2)$. However, a dequeue operation executing until completion after this trace will return value $y$ (only position $1$ is filled in the array {\tt items}) which is not consistent with this linearization. On the other hand, assuming that enqueues should be linearized at the assignment of {\tt items[i]} and extending the trace with ${\tt items[i_1]} = x$ and a completed dequeue that in this case returns $x$, leads to an incorrect linearization 
+Assuming that the linearization point corresponds to the assignment of {\tt i}, the history of this trace should be linearized to $inv(enq,x,1)\ ret(enq,1)\ inv(enq,y,2)\ ret(enq,2)$. However, a dequeue operation executing until completion after this trace will return value $y$ (only position $1$ is filled in the array {\tt items}) which is not consistent with this linearization. On the other hand, assuming that enqueues should be linearized at the assignment of {\tt items[i]} and extending the trace with ${\tt items[i_1]} = x$ and a completed dequeue that in this case returns $x$, leads to the following incorrect linearization:
 \begin{align*}
 inv(enq,y,2)\ ret(enq,2) inv(enq,x,1)\ ret(enq,1)\ inv(deq,3)\ ret(deq,1,3).
 \end{align*}
 
 The dequeue method has a fixed linearization point which corresponds to an execution of {\tt swap} returning a non-null value. This action alone contributes to the effect of that value being removed from the queue. This claim will be formally proved in Section~\ref{ssec:HerlihyWing}.
 
-Since the linearization points of the enqueues are not fixed, it is not possible to define a forward simulation from the Herlihy \& Wing queue to the standard abstract implementation $AbsQ_0$. In the following, we describe the abstract implementation $AbsQ$ we propose for which such a forward simulation does exist.
+Since the linearization points of the enqueues are not fixed, it is not possible to define a forward simulation from $\mathit{HWQ}$ to the standard abstract implementation $AbsQ_0$. In the following, we describe the abstract implementation $AbsQ$ for which such a forward simulation does exist.
 
 Informally, $AbsQ$ records the happens-before order between enqueue operations for which the added value has not been removed by a dequeue operation. The linearization point of a dequeue operation with return value $d\neq{\tt EMPTY}$ is enabled only if the happens-before order stored in the current state contains a minimal enqueue operation that adds the value $d$. The effect of the linearization point is that the minimal enqueue is removed from the current state and the return value is recorded in the library state. When the return value is {\tt EMPTY}, the linearization point of a dequeue is enabled only if the current state stores no enqueue operation. The return of a dequeue is enabled only if the returned value matches the one fixed at the linearization point.
 
 \begin{wrapfigure}{l}{7cm}
+\vspace{-8mm}
 \includegraphics[width=7cm]{fig-queue1.pdf}
-\begin{center}
-(a)
-\end{center}
 
+\vspace{2mm}
 \includegraphics[width=7cm]{fig-queue2.pdf}
-\begin{center}
-(b)
-\end{center}
+\vspace{-5mm}
 \caption{Simulating queue histories with $AbsQ$.}
 \label{fig:queueSim}
+\vspace{-10mm}
 \end{wrapfigure}
-SHOW HOW $AbsQ$ CAN SIMULATE SOME PROBLEMATIC HISTORIES
+Figure 2 pictures two executions of $AbsQ$ for two extended histories (that include dequeue linearization points). The state of $AbsQ$ after each action is pictured as a graph below the action. The nodes of this graph represent enqueue operations and the edges happens-before constraints. Each node is labeled by a value (the input of the enqueue) and a flag {\tt PEND} or {\tt COMP} showing whether the operation is pending or completed. For instance, in the case of the first history, the dequeue linearization point $lin(deq,y,3)$ is enabled because the current happens-before contains a \emph{minimal} enqueue operation with input $y$. Note that a linearization point $lin(deq,x,3)$ is also enabled at this state.
 
-The states of $AbsQ$ are tuples $\tup{O,<,\ell,rv,cp}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked enqueue operations), $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a flag that records whether the operation is pending or completed (this flag is used to track the happens-before order), $rv:\<Ops> ~> \<Vals>$ records the return value of a pending dequeue fixed at its linearization point, and $cp:\<Ops> ~> \<Nats>$ records the control point of every pending (enqueue or dequeue) operation.
+Formally, the states of $AbsQ$ are tuples $\tup{O,<,\ell,rv,cp}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked enqueue operations), $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a flag that records whether the operation is pending or completed (this flag is used to track the happens-before order), $rv:\<Ops> ~> \<Vals>$ records the return value of a pending dequeue fixed at its linearization point, and $cp:\<Ops> ~> \<Nats>$ records the control point of every pending (enqueue or dequeue) operation.
 The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsQ}. The alphabet of $AbsQ$ contains call/return actions and dequeue linearization points. The latter are denoted by $lin(deq,d,k)$ where $d\in \<Vals>$ and $k\in\<Ops>$. $Lin(deq)$ is the set of all such actions.
 
 Concerning enqueue operations, the rule {\sc call-enq} orders the invoked operation after all the completed enqueue operations stored in the current state, and the rules {\sc ret-enq1}/{\sc ret-enq2} flip the corresponding flag from {\tt PEND} to {\tt COMP} provided that the operation is still present in the current state. For dequeue operations, {\sc call-deq} has no effect other than incrementing the control point and {\sc ret-deq} checks whether the return value is the same as the one fixed at the linearization point. The linearization point rule {\sc lin-deq1} corresponds to the case of a non-empty queue, showing that $lin(deq,d,k)$ is enabled only if the value $d$ has been added by an enqueue which is minimal in the current happens-before order. When it is enabled, it removes the enqueue adding $d$ from the state. The linearization point rule {\sc lin-deq2} corresponds to the case of dequeue operations linearized when the queue is empty.
@@ -165,3 +164,17 @@ A queue implementation $L$ with fixed dequeue linearization points is a $C\cup R
 \end{corollary}
 
 \subsection{A Correctness Proof For Herlihy\&Wing Queue}\label{ssec:HerlihyWing}
+
+We describe a forward simulation $\mathit{fs}$ from $\mathit{HWQ}$ to $AbsQ$. Essentially, an $AbsQ$ state associated by $\mathit{fs}$ to a $\mathit{HWQ}$ state consists of all the  enqueue operations for which the input is still present in the array {\tt items} and all the pending enqueue operations that have at most reserved an array position, ordered by a relation $<$ satisfying the following: 
+\begin{itemize}
+	\item $<$ is consistent with the order in which positions of {\tt items} have been reserved, i.e., for every two enqueues $k$ and $k'$ such that ${\tt i}(k) < {\tt i}(k')$, we have that $k' \not< k$,
+	\item enqueues that haven't reserved an array position are maximal, i.e., for every two enqueues $k$ and $k'$ such that $k'$ has not executed the first statement, we have that $k'\not< k$,
+	\item an enqueue which has reserved an array position $i$ and executed only the first statement can't be ordered before another enqueue that has reserved a position $j > i$ when the position $i$ has been ``observed'' by a non-linearized dequeue that may ``observe'' $j$ in the current array traversal, i.e., for every two enqueues $k$ and $k'$, and a dequeue $k_d$, such that ${\tt i}(k) < {\tt i}(k_d) \leq {\tt i}(k')$, ${\tt x}={\tt null}$, and ${\tt i}(k') < {\tt range}(k_d)$, we have that $k\not< k'$. 
+\end{itemize}
+An enqueue is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by  $(d,{\tt COMP})$, otherwise. Also, for every dequeue operation $k$ such that ${\tt x}(k)=d\neq {\tt null}$, we have that $rv(k)=d$.
+
+We show that $\mathit{fs}$ is indeed a $C\cup R\cup Lin(deq)$-forward simulation. Let $s$ and $t$ be states of $\mathit{HWQ}$ and $AbsQ$, respectively, such that $(s,t)\in\mathit{fs}$.
+
+We first consider the steps of an enqueue operation. It is easy to see that transitions labeled by call and return actions can be mimicked by similar transitions of $AbsQ$. The internal steps are simulated by an empty sequence of $AbsQ$ transitions because the constraints defining $<$ are an invariant for these steps. For instance, let $s'$ be the state obtained from $s$ when a pending enqueue reserves an array position. This enqueue operation must be maximal in both $t$ and any state $t'$ related to $s'$. Notice that there is no dequeue that can observe this position without reaching the end of the current traversal.
+
+
