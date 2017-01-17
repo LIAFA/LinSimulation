@@ -208,5 +208,5 @@ The execution of {\tt swap} returning {\tt null} in a dequeue $k_d$ enables new 
 Let $k$ and $k'$ be two enqueue operations such that together with the dequeue $k_d$ they satisfy the property (\ref{eq:inst}) in $s'$ but not in $s$. 
 We write ${\tt i}_s(k)$ to refer to the value of the variable {\tt i} of operation $k$ in state $s$. 
 This implies that ${\tt i}_{s'}(k) = {\tt i}_{s'}(k_d) \leq {\tt i}_{s'}(k')$ and ${\tt items}[{\tt i}_{s'}(k_d)]={\tt null}$. The latter implies that the enqueue $k$ didn't executed
-the second statement and it is pending (because the position it reserved is still {\tt null}). Checking whether the value returned by {\tt swap} is {\tt null} doesn't modify any of the variables in property  (\ref{eq:inst}) and also, it doesn't change the valuation of the predicate $\atCP {\tt if}\text{-}{\tt inc}$.
+the second statement and it is pending (because the position it reserved is still {\tt null}). Finally, checking whether the value returned by {\tt swap} is {\tt null} doesn't modify any of the variables in property  (\ref{eq:inst}) and also, it doesn't change the valuation of the predicate $\atCP {\tt if}\text{-}{\tt inc}$.
 
