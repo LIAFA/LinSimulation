@@ -172,7 +172,7 @@ We describe a forward simulation $\mathit{fs}$ from $\mathit{HWQ}$ to $AbsQ$. Es
 	\item[(a)] pending enqueues are maximal, i.e., for every two enqueues $k$ and $k'$ such that $k'$ is pending, we have that $k'\not< k$,
 	\item[(b)] $<$ is consistent with the order in which positions of {\tt items} have been reserved, i.e., for every two enqueues $k$ and $k'$ such that ${\tt i}(k) < {\tt i}(k')$, we have that $k' \not< k$,
 	\item[(c)] an enqueue which has reserved an array position $i$ %and executed only the first statement 
-	can't be ordered before another enqueue that has reserved a position $j > i$ when the position $i$ has been ``observed'' by a non-linearized dequeue that may ``observe'' $j$ in the current array traversal (we also require that the dequeue has just finished the execution of {\tt swap}), i.e., for every two enqueues $k$ and $k'$, and a dequeue $k_d$, such that 
+	can't be ordered before another enqueue that has reserved a position $j > i$ when the position $i$ has been ``observed'' by a non-linearized dequeue that may ``observe'' $j$ in the current array traversal, i.e., for every two enqueues $k$ and $k'$, and a dequeue $k_d$, such that 
 	
 	\noindent
 	{\small
