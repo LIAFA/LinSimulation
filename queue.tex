@@ -36,7 +36,7 @@ We want to introduce $L_I$ as the next step. States of $L_I$ consists of strict 
 \item $(q, inv(enq,d,k), q') \in \delta_I$ iff $f_q(k) = N \wedge f_{q'}(k) = E_0 \wedge d \neq \texttt{EMPTY} \wedge (k,\_,\_) \notin nd_q \wedge nd_{q'} = nd_q \cup \{ (k,d,\texttt{PENDING}\} \wedge AddNode(ed_{q'}, ed_q,k)$ where $AddNode(ed_{q'}, ed_q,k)$ is true iff $ed_{q'}$ is obtained from $ed_q$ by adding edges from every closed node of $ed_q$ to the node with identifier $k$.
 \item $(q, ret(enq,k), q') \in \delta_I$ iff $f_q(k) =E_0 \wedge f_{q'}(k) = E_1 \wedge ( (k,\_,\texttt{PENDING}) \notin nd_q \wedge so_q = so_{q'} \vee UpdateNode(so_{q'}, so_q, k) )$ where $UpdateNode(so_{q'}, so_q, k)$ is true iff $(k,d,\texttt{PENDING}) \in nd_q$ for some $d \in \mathcal{D}$, it is replaced with node $(k,d,\texttt{CLOSED}$ in the state $q'$ and all the edges adjacent to $(k,d,\texttt{PENDING})$ in state $q$ are replaced with edges adjacent to $(k,d,\texttt{CLOSED})$ in the state $q'$.
 \item $(q, inv(deq,k), q') \in \delta_I$ iff $f_q(k) = N \wedge f_{q'}(k) = D_0$.
-\item $(q, lin(deq,d,k), q') \in \delta_I$ iff $f_q(k) = D_0 \wedge f_{q'}(k) = D_1 \wedge (d = \texttt{EMPTY} \wedge nd_q = ed_q = nd_{q'} = ed_{q'} \emptyset \vee d \neq \texttt{EMPTY} \wedge RemoveNode(so_q, so_{q'},d))$ where $RemoveNode(so_q, so_{q'},d)$ is true iff there is a minimal node $n \in so_q$ of which data value (second field) is $d$ and $so_{q'}$ is obtained from $so_q$ by removing $n$ and all the edges adjacent to it. Note that linearization of dequeue could remove a \texttt{PENDING} node.  
+\item $(q, lin(deq,d,k), q') \in \delta_I$ iff $f_q(k) = D_0 \wedge f_{q'}(k) = D_1 \wedge (d = \texttt{EMPTY} \wedge ed_q = ed_{q'} = \emptyset \wedge Pending(nd_q) \wedge Pending(nd_{q'} \vee d \neq \texttt{EMPTY} \wedge RemoveNode(so_q, so_{q'},d))$ where $RemoveNode(so_q, so_{q'},d)$ is true iff there is a minimal node $n \in so_q$ of which data value (second field) is $d$ and $so_{q'}$ is obtained from $so_q$ by removing $n$ and all the edges adjacent to it and $Pending(nd)$ iff all the nodes in $nd$ are pending. Note that linearization of dequeue could remove a \texttt{PENDING} node.  
 \item $(q, ret(deq,d,k) q') \in \delta_I$ iff $f_q(k) = D_1 \wedge f_{q'}(k) = D_2$.
 \end{itemize}
 \end{itemize}
@@ -211,7 +211,7 @@ Since $L_I$ is deterministic w.r.t. alphabet $AQ\Sigma$, there exists a forward 
 
 The relation $fs$ relates $q = (O_e, O_d, bck, itms, i,x, rng, cp) \in Q_C$ to the state $q'=(O,<,\ell,rval,cp') \in Q_I$ iff:
 \begin{enumerate}
-\item For all $k \in O_e$, if $cp(k) \in \{1,2\}$, then $cp'(k) = 1$; if $cp(k) = 3$ then $cp'(k)=2$. For all $k \in O_d$, if $cp(k) \in \{1,2,5\}$, then $cp'(k) = 1$; if $cp(k) = 3$, then $cp'(k)=2$ and if $cp(k)=4$, then $cp'(k)=3$. 
+\item For all $k \in O_e$, if $cp(k) \in \{1,2, 3\}$, then $cp'(k) = 1$; if $cp(k) = 4$ then $cp'(k)=2$. For all $k \in O_d$, if $cp(k) \in \{1,2,5\}$, then $cp'(k) = 1$; if $cp(k) = 3$, then $cp'(k)=2$ and if $cp(k)=4$, then $cp'(k)=3$. 
 \item $k \in O$ iff $k \in O_e$; and $cp(k) \in \{1,2\}$ or $cp(k) \in \{3,4\} \wedge itms(i(k)) \neq \texttt{EMPTY}$.
 \item $\ell(k)= (d, \texttt{PEND})$ iff $cp(k) \in \{1,2\}$ or $cp(k) =3 \wedge itms(i(k)) \neq \texttt{EMPTY}$; and $x(k) = d$ and $k \in O_e$. $\ell(k) = (d,\texttt{COMP}$ iff $k \in O_e$, $cp(k) = 4$, $itms(i(k)) \neq \texttt{EMPTY}$ and $x(k)=d$. 
 \item $rval(k)=d$ if $k \in O_d$, $cp[k] = 3$ and $x(k) = d$.
