@@ -26,6 +26,7 @@ The initial state has all these components set to $\emptyset$ and the transition
   \begin{mathpar}
     \inferrule[call-push]{
       k\not\in dom(cp) \\ 
+      d\neq {\tt EMPTY}
     }{
       O,<,\ell,rv,cp,be,ov 
       \xrightarrow{inv(push,d,k)} \\
