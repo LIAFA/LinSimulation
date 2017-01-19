@@ -72,7 +72,7 @@ Let $L_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, s_0^2, \delta_2)$ 
 %If $\mathit{fs}[s]$ is a unique state for all $s \in Q_1$ then $\mathit{fs}$ is called a refinement mapping/function. 
 A $\Gamma$-forward simulation shows that every step of $L_1$ corresponds to a (possibly empty) sequence of steps of $L_2$. In order to imply $\Gamma$-refinement, steps of $L_1$ labeled by observable actions are treated in a particular way: a step of $L_1$ labeled by a call, resp., return, action is simulated by a sequence of steps of $L_2$ that start, resp., end, with the same action, and a step of $L_1$ labeled by another observable action should be matched by a step of $L_2$ labeled by the same action. The rest of the transitions in $L_1$ are matched to a possibly empty sequence of transitions of $L_2$ with arbitrary labels.
 
-The following lemma shows the soundness and the completeness of $\Gamma$-forward simulations.
+The following lemma \textcolor{red}{(following is a theorem)} shows the soundness and the completeness of $\Gamma$-forward simulations.
 \begin{theorem}\label{th:forSim}
 Let $L_1$ and $L_2$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, respectively, such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. If there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$, then $L_1$ $\Gamma$-refines $L_2$. Moreover, if $L_1$ $\Gamma$-refines $L_2$ and $L_2$ is $\Gamma$-deterministic, then there exists a $\Gamma$-forward simulation from $L_1$ to $L_2$.
 \end{theorem}
@@ -107,12 +107,12 @@ such that $C\cup R\cup Lin\subseteq \Sigma$, by adding the following constraints
 %\end{itemize}
 We assume that libraries produce only well-formed traces. The projection of a library trace over $C\cup R\cup Lin$ is called an 
 \emph{extended history}. A trace or extended history is called \emph{$Lin$-complete} when every completed operation has a linearization 
-point, i.e., TODO. A library $L$ over alphabet $\Sigma$ is called \emph{with fixed linearization points} if{f} $C\cup R\cup Lin\subseteq \Sigma$ 
-and every trace $@t\in Tr(L)$ is $Lin$-complete.
+point, i.e., TODO \textcolor{red}{(So, our machine $AbsQ$ is not $Lin$-complete because add operations in its histories do not have linearization points?)} . A library $L$ over alphabet $\Sigma$ is called \emph{with fixed linearization points} if{f} $C\cup R\cup Lin\subseteq \Sigma$ 
+and every trace $@t\in Tr(L)$ is $Lin$-complete. \textcolor{red}{I did not understand the point of lin-completeness and with fixed linearization points. Did not we assume that libraries produce well-formed traces which produce lin-complete traces by definition?}
 
 Proving the correctness of an implementation $L_1$ of a concurrent object such as a queue or a stack with fixed linearization points
 reduces to proving that $L_1$ is a $(C\cup R\cup Lin)$-refinement of an abstract implementation $L_2$ of the same object where method
-bodies are guarded with a global-lock acquisition. Assuming that the abstract implementation is $(C\cup R\cup Lin)$-deterministic, which is typically the case,
+bodies are guarded with a global-lock acquisition \textcolor{red}{Can we say that a stack implementation is correct although lock-protected-body version $L_2$ is not a correct stack implementation? Should not we pick $L_2$ the standart $AbsS_0$ or something equivalent to it?} . Assuming that the abstract implementation is $(C\cup R\cup Lin)$-deterministic, which is typically the case \textcolor{red}{typical or not typical? $AbsQ_0$ is the typical abstract queue which is not deterministic.},
 by Theorem~\ref{th:forSim}, proving $(C\cup R\cup Lin)$-refinement is equivalent to finding a $(C\cup R\cup Lin)$-forward simulation 
 from $L_1$ to $L_2$.
 
