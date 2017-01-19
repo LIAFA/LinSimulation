@@ -11,7 +11,21 @@ TODO DESCRIBE THE TIME-STAMPED STACK, EXPLAIN THAT NO METHOD HAS A FIXED LIN POI
 
 COMMIT POINTS ARE LINEARIZATION POINTS WHEN THE LIBRARY IS INTERPRETED AS A MULTISET
 
-We define an abstract stack implementation $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that essentially, similarly to $AbsQ$, maintains the happens-before order of the push operations whose value has not been yet removed. However, since the commit points are not necessarily linearization points, the pop operations are treated differently. Intuitively, each pop operation starts by taking a snapshot of the completed push operations which are maximal in the happens-before order and continuously tracks the push operations which are overlapping with it. The commit point is enabled only if the return value corresponds to one of the push operations in the initial snapshot, or to a push happening earlier when values from the initial snapshot are removed by other pop operations, or to one of the push operations that overlaps with the pop.
+We define an abstract stack implementation $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that essentially, similarly to $AbsQ$, maintains the happens-before order of the push operations whose value has not been yet removed. However, since the commit points are not necessarily linearization points, the pop operations are treated differently. Intuitively, each pop operation starts by taking a snapshot of the completed push operations which are maximal in the happens-before order and continuously tracks the push operations which are overlapping with it. The commit point is enabled only if the return value corresponds to one of the push operations in the initial snapshot, or to a push happening earlier when the values from the initial snapshot are removed by other pop operations, or to one of the push operations that overlaps with the pop. TODO EMPTY
+
+\begin{wrapfigure}{l}{7cm}
+\vspace{-8mm}
+\includegraphics[width=7cm]{fig-stack.pdf}
+%
+%\vspace{2mm}
+%\includegraphics[width=7cm]{fig-queue2.pdf}
+\vspace{-5mm}
+\caption{Simulating stack histories with $AbsS$.}
+\label{fig:stackSim}
+\vspace{-6mm}
+\end{wrapfigure}
+Figure~\ref{fig:stackSim} pictures two executions of $AbsQ$ for two extended histories (that include dequeue linearization points). The state of $AbsQ$ after each action is pictured as a graph below the action. The nodes of this graph represent enqueue operations and the edges happens-before constraints. Each node is labeled by a value (the input of the enqueue) and a flag {\tt PEND} or {\tt COMP} showing whether the operation is pending or completed. For instance, in the case of the first history, the dequeue linearization point $lin(deq,y,3)$ is enabled because the current happens-before contains a \emph{minimal} enqueue operation with input $y$. Note that a linearization point $lin(deq,x,3)$ is also enabled at this state.
+
 
 TODO AN EXAMPLE FOR EACH CASE (HISTORIES OF THE TIME-STAMPED STACK)
 
@@ -72,11 +86,13 @@ The initial state has all these components set to $\emptyset$ and the transition
     \inferrule[lin-pop1]{
        cp(k) = 1 \\
        d\neq{\tt EMPTY} \\
-       k'\in be(k)\cup ov(k)\land \ell_1(k')=d
+       k'\in be(k)\cup ov(k)\land \ell_1(k')=d \\
+       \forall k_1.\ k'\not\in be(k_1) \Rightarrow be'(k_1)=be(k_1) \\     \\
+       \forall k_1.\ k'\in be(k_1) \Rightarrow be'(k_1)=(be(k_1)\setminus\{k'\})\cup \{k_2: k_2\in pred_{<}(k') \land \forall k_3. k_2<k_3 => k_3\not\in be(k_1)\} \\
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{com(pop,d,k)} \\
-      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto 2],be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}],ov
+      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto 2],be',ov %be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}]
     }\hspace{5mm}
 
     \inferrule[lin-pop2]{
@@ -92,7 +108,8 @@ The initial state has all these components set to $\emptyset$ and the transition
       \end{mathpar}
   }
  \vspace{-5mm}
-  \caption{The transition relation of $AbsQ$. We use the following notions: $f[\forall k.guard(k)=> k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and $g(k)=expr(k)$ otherwise, $maxCo(O)$ is the set of maximally completed operations in $O$, i.e., $maxCo(O)=\set{k\in O: \ell_1(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_1(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.} }
+  \caption{The transition relation of $AbsQ$. We use the following notions: $f[\forall k.guard(k)=> k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and $g(k)=expr(k)$ otherwise, $maxCo(O)$ is the set of maximally completed operations in $O$, i.e., $maxCo(O)=\set{k\in O: \ell_1(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_1(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.%\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.} 
+  }
   \label{fig:transitions:AbsS}
 \vspace{-6mm}
 \end{figure}
