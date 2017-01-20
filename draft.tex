@@ -39,5 +39,49 @@
 
 \section{Existence of Forward Simulations for Stack Implementations that have Fixed Pop Linearization Points}
 \input{commit}
+First, describe the TS-Stack algorithm:
+
+\begin{lstlisting}
+Type Node{
+ elt:Vals;
+ ts: int;
+ next: Node;
+ taken: bool;
+};
+
+
+pools: [Tid]Node; //Keeps top of pools, 
+//Initially they point to sentinel dummy nodes s s.t.
+//s.next = s and s.ts = -1 and s.taken=false
+TSGen: int;    //Timestamp generator initially 0
+
+void push(e:Vals, tid:Tid){
+  Node n = new Node(e, MAX_INT, NULL, false);
+  n.next = pools[tid];
+  pools[tid] = n;
+  i: int = TSGen++;
+  n.ts = i;
+}
+
+Vals pop(){
+ success: bool = false;
+ maxTS: int = -1;
+ youngest: Node = NULL;
+ while(!success){
+  maxTS: int = -1;
+  youngest = NULL;
+  for(current in pools){
+    n: Node = current;
+    while(n.taken && n.next != n)
+      n = n.next;
+    if(maxTS < n.ts)
+      youngest = n;
+  }
+  success = CAS(youngest.taken,false,true);
+ }
+ return youngest;
+}
+
+\end{lstlisting}
 \input{set}
 \end{document}
