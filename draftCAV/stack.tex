@@ -27,29 +27,33 @@ void push(int x) {
   n->ts = i;
 }
 int pop() {
-  boolean success = false;
-  int maxTS = -1;
-  Node* youngest = null;
-  while ( !success ) {
-    maxTS = -1; youngest = null;
-    for(int i = 0; i < maxThreads; i++){
-      Node* n = pools[i];
-      while (n->taken && n->next != null)
-        n = n->next;
-      if(maxTS < n->ts) {
-        maxTS = n->ts; youngest = n;
-      }
-    }
-    success=CAS(youngest->taken,false,true);
-  }
-  return youngest;
+ boolean success = false;
+ int maxTS = -1;
+ Node* youngest = null;
+ while ( !success ) {
+   maxTS = -1; youngest = null;
+   for(int i = 0; i < maxThreads; i++){
+     Node* n = pools[i];
+     while (n->taken && n->next != null)
+       n = n->next;
+     if(maxTS < n->ts) {
+       maxTS = n->ts; youngest = n;
+     }
+   }
+   success=CAS(youngest->taken,false,true);
+ }
+ return youngest->data;
 }
 \end{lstlisting}
 \vspace{-6mm}
 \caption{Time-Stamped Stack. We assume that every statement is atomic.}
-\label{fig:HerlihyWing}
+\label{fig:TimeStamped}
 \vspace{-1mm}
 \end{wrapfigure}
+We explain the meaning of the commit points on a simplified version of the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} given in Figure~\ref{fig:TimeStamped}. This stack implementation maintains a vector of singly-linked lists, one for each thread, where list nodes contain a data value (field {\tt data}), a timestamp (field {\tt ts}), the next pointer (field {\tt next}), and a boolean flag indicating whether the node represents a value removed from the stack (field {\tt taken}). Initially, each list contains a sentinel dummy node pointing to {\tt null} with timestamp $-1$ and the flag {\tt taken} set to {\tt false}.
+
+Pushing a value to the stack proceeds in several steps: adding a node with maximal timestamp, asking for a new timestamp (given by the value of the shared integer {\tt TS}), and updating the timestamp of the added node. Popping a value from the stack consists in traversing all the lists, finding the first element which doesn't represent a removed value (i.e., {\tt taken} is {\tt false}) in each list, and selecting the element with the maximal timestamp. A compare-and-swap (CAS) is used to set the {\tt taken} flag of this element to {\tt true}. The procedure restarts if the CAS fails.
+
 We consider a set of actions $Com(pop)=\set{com(pop,d,k):d\in\<Vals>, k\in\<Ops>}$, called \emph{commit points}, representing actions of a pop operation where its return value is determined. Usually, a stack implementation stores the pushed values into a data structure, e.g., a singly-linked list, and a pop operation contains an action (typically, a compare-and-swap) that removes an element from this data structure (or sets a flag associated to this element to a ``deleted'' state). Such an action represents a commit point since the pop operation will return the value stored in this element. 
 
 // Initially each pool[i] points to a 
