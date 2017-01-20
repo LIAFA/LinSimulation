@@ -5,7 +5,57 @@ While the abstract queue implementation in Section~\ref{sec:queues} can be adapt
 
 \subsection{Abstract stack implementation}
 
+
+\begin{wrapfigure}{l}{6.1cm}
+\vspace{-14mm}
+\begin{lstlisting}
+struct Node{
+  int data;
+  int ts;
+  Node* next;
+  boolean taken;
+};
+Node* pools[maxThreads];
+int TS = 0;   
+
+void push(int x) {
+  Node* n = new Node(x,MAX_INT,
+                        null,false);
+  n->next = pools[myTID];
+  pools[myTID] = n;
+  int i = TS++;
+  n->ts = i;
+}
+int pop() {
+  boolean success = false;
+  int maxTS = -1;
+  Node* youngest = null;
+  while ( !success ) {
+    maxTS = -1; youngest = null;
+    for(int i = 0; i < maxThreads; i++){
+      Node* n = pools[i];
+      while (n->taken && n->next != null)
+        n = n->next;
+      if(maxTS < n->ts) {
+        maxTS = n->ts; youngest = n;
+      }
+    }
+    success=CAS(youngest->taken,false,true);
+  }
+  return youngest;
+}
+\end{lstlisting}
+\vspace{-6mm}
+\caption{Time-Stamped Stack. We assume that every statement is atomic.}
+\label{fig:HerlihyWing}
+\vspace{-1mm}
+\end{wrapfigure}
 We consider a set of actions $Com(pop)=\set{com(pop,d,k):d\in\<Vals>, k\in\<Ops>}$, called \emph{commit points}, representing actions of a pop operation where its return value is determined. Usually, a stack implementation stores the pushed values into a data structure, e.g., a singly-linked list, and a pop operation contains an action (typically, a compare-and-swap) that removes an element from this data structure (or sets a flag associated to this element to a ``deleted'' state). Such an action represents a commit point since the pop operation will return the value stored in this element. 
+
+// Initially each pool[i] points to a 
+// sentinel dummy node with ts = -1, 
+// next = null, taken=false
+
 
 TODO DESCRIBE THE TIME-STAMPED STACK, EXPLAIN THAT NO METHOD HAS A FIXED LIN POINT, GIVE THE COMMIT POINTS, SHOW THAT COMMIT POINTS ARE NOT LIN POINTS
 
