@@ -68,8 +68,8 @@ The return of a dequeue is enabled only if the returned value matches the one fi
 \end{wrapfigure}
 Figure~\ref{fig:queueSim} pictures two executions of $AbsQ$ for two extended histories (that include dequeue linearization points). The state of $AbsQ$ after each action is pictured as a graph below the action. The nodes of this graph represent enqueue operations and the edges happens-before constraints. Each node is labeled by a value (the input of the enqueue) and a flag {\tt PEND} or {\tt COMP} showing whether the operation is pending or completed. For instance, in the case of the first history, the dequeue linearization point $lin(deq,y,3)$ is enabled because the current happens-before contains a \emph{minimal} enqueue operation with input $y$. Note that a linearization point $lin(deq,x,3)$ is also enabled at this state.
 
-Formally, the states of $AbsQ$ are tuples $\tup{O,<,\ell,rv,cp}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked enqueue operations), $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a flag that records whether the operation is pending or completed (this flag is used to track the happens-before order), $rv:\<Ops> ~> \<Vals>$ records the return value of a pending dequeue fixed at its linearization point ($~>$ denotes a partial function), and $cp:\<Ops> ~> \<Nats>$ records the control point of every pending (enqueue or dequeue) operation.
-The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsQ}. The alphabet of $AbsQ$ contains call/return actions and dequeue linearization points. The latter are denoted by $lin(deq,d,k)$ where $d\in \<Vals>$ and $k\in\<Ops>$. $Lin(deq)$ is the set of all such actions.
+Formally, the states of $AbsQ$ are tuples $\tup{O,<,\ell,rv,cp}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked enqueue operations), $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a flag that records whether the operation is pending or completed (this flag is used to track the happens-before order), $rv:\<Ops> ~> \<Vals>$ records the return value of a pending dequeue fixed at its linearization point ($~>$ denotes a partial function), and $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every enqueue ($A_1, A_2$) or dequeue ($R_1,R_2,R_3$) operation.
+The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsQ}. The alphabet of $AbsQ$ contains call/return actions and dequeue linearization points. The latter are denoted by $lin(deq,d,k)$ where $d\in \<Vals>$, $k\in\<Ops>$. $Lin(deq)$ is the set of all such actions.
 
 Concerning enqueue operations, the rule {\sc call-enq} orders the invoked operation after all the completed enqueue operations stored in the current state, and the rules {\sc ret-enq1}/{\sc ret-enq2} flip the corresponding flag from {\tt PEND} to {\tt COMP} provided that the operation is still present in the current state. For dequeue operations, {\sc call-deq} has no effect other than incrementing the control point and {\sc ret-deq} checks whether the return value is the same as the one fixed at the linearization point. The linearization point rule {\sc lin-deq1} corresponds to the case of a non-empty queue, showing that $lin(deq,d,k)$ is enabled only if the value $d$ has been added by an enqueue which is minimal in the current happens-before order. When it is enabled, it removes the enqueue adding $d$ from the state. The linearization point rule {\sc lin-deq2} corresponds to the case of dequeue operations linearized with an {\tt EMPTY} return value.
 
@@ -84,7 +84,7 @@ Concerning enqueue operations, the rule {\sc call-enq} orders the invoked operat
       O,<,\ell,rv,cp
       \xrightarrow{inv(enq,d,k)}
       %O\cup\{k\},<\cup \{(k',k): \ell_2(k')={\tt COMP}\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto 1]
-      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto 1]
+      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1]
     }\hspace{5mm}
 
     \inferrule[call-deq]{
@@ -92,55 +92,53 @@ Concerning enqueue operations, the rule {\sc call-enq} orders the invoked operat
     }{
       O,<,\ell,rv,cp
       \xrightarrow{inv(deq,k)}
-      O,<,\ell,rv,cp[k\mapsto 1]
+      O,<,\ell,rv,cp[k\mapsto R_1]
     }\hspace{5mm}
     \inferrule[ret-deq]{
-       cp(k) = 2 \\
+       cp(k) = R_2 \\
        rv(k)=d  
     }{
       O,<,\ell,rv,cp
       \xrightarrow{ret(deq,d,k)}
-      O,<,\ell,rv,cp[k\mapsto 3]
+      O,<,\ell,rv,cp[k\mapsto R_3]
     }\hspace{5mm}
 
     \inferrule[ret-enq1]{
-      cp(k) = 1 \\
+      cp(k) = A_1 \\
       k \in O \\
       \ell(k) = (d,{\tt PEND}) 
     }{
       O,<,\ell,rv,cp
       \xrightarrow{ret(enq,k)}
-      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto 2]
+      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto A_2]
     }\hspace{5mm}
     \inferrule[ret-enq2]{
-      cp(k) = 1 \\
+      cp(k) = A_1 \\
       k \not\in O 
     }{
       O,<,\ell,rv,cp
       \xrightarrow{ret(enq,k)}
-      O,<,\ell,rv,cp[k\mapsto 2]
+      O,<,\ell,rv,cp[k\mapsto A_2]
     }\hspace{5mm}
 
     \inferrule[lin-deq1]{
-       cp(k) = 1 \\
+       cp(k) = R_1 \\
        d\neq{\tt EMPTY} \\
-       k'\in min(O) \land \ell_1(k')=d
+       k'\in min(O) \\ 
+       \ell_1(k')=d
     }{
       O,<,\ell,rv,cp
       \xrightarrow{lin(deq,d,k)}
-      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto 2]
+      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2]
     }\hspace{5mm}
-
     \inferrule[lin-deq2]{
-       cp(k) = 1 \\
+       cp(k) = R_1 \\
        \forall o\in O. \ell_2(o)={\tt EMPTY}
     }{
       O,<,\ell,rv,cp
       \xrightarrow{lin(deq,{\tt EMPTY},k)}
-      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto 2]
-    }\hspace{5mm}
-
-    
+      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto R_2]
+    }\hspace{5mm}    
       \end{mathpar}
   }
  \vspace{-5mm}
@@ -217,4 +215,4 @@ We write ${\tt i}_s(k)$ to refer to the value of the variable {\tt i} of operati
 This implies that ${\tt i}_{s'}(k) = {\tt i}_{s'}(k_d) \leq {\tt i}_{s'}(k')$ and ${\tt items}[{\tt i}_{s'}(k_d)]={\tt null}$. The latter implies that the enqueue $k$ didn't executed
 the second statement and it is pending (because the position it reserved is still {\tt null}). Finally, checking whether the value returned by {\tt swap} is {\tt null} doesn't modify any of the variables in property  (\ref{eq:inst}) and also, it doesn't change the valuation of the predicate $\atCP {\tt if}\text{-}{\tt inc}$.
 
-TODO LINEARIZATION POINT
+Finally, we show that the linearization point of a dequeue $k$ of $\mathit{HWQ}$, i.e., an execution of {\tt swap} returning a non-null value $d$, from state $s$ and leading to a state $s'$ is simulated by a transition labeled by $lin(deq,d,k)$ of $AbsQ$ from state $t$. By the definition of $\mathit{HWQ}$, there exists a unique enqueue $k_e$ which filled the position updated by $k$, i.e., ${\tt i}_s(k_e)=i_s(k)$ and ${\tt x}_{s'}(k)={\tt x}_s(k_e)$. We show that $k_e$ is minimal in the order relation $<$ of $t$ which implies that $lin(deq,d,k)$ is enabled in $t$. Thus, instantiating item (c) in the definition of $<$ with $k'=k_e$ and $k_d=k$ we get that every enqueue that reserved a position smaller than the one of $k_e$ can't be ordered before $k_e$ in the order $<$. Also, applying item (b) with $k=k_e$ we get the same for every enqueue that reserved a bigger position. An enqueue that didn't reserved a position is by definition maximal in the order $<$ and therefore, not a predecessor of $k_e$. The state $t'$ obtained from $t$ through a $lin(deq,d,k)$ transition is related to $s'$ because essentially, (1) the value added by $k_e$ is not anymore present in {\tt items} which implies that $k_e$ doesn't occur in any $AbsQ$ state related to $s'$, and (2) the value of ${\tt x}(k)$ is set to $d\neq {\tt null}$ which implies that $rv(k)$ is set to $d$ in every $AbsQ$ state related to $s'$.

@@ -1,7 +1,7 @@
 %!TEX root = draft.tex
 \section{Stacks With Fixed Pop Commit Points}\label{sec:stacks}
 
-While the abstract queue implementation in Section~\ref{sec:queues} can be adapted to stacks~\footnote{The only modification is that the linearization point of a pop $lin(pop,d,k)$ with $d\neq{\tt EMPTY}$ is enabled only if $k$ is added by a push which is maximal in the happens-before order stored in the state.}, it can not simulate (through forward simulations) existing stack implementations like the Time-stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} where the linearization points of the pop operations are not fixed. In this section, we define an abstract implementation which simulates such implementations provided that the point in time where the return value of a pop operation is determined corresponds to a fixed action. To demonstrate the use of this abstract implementation we provide a correctness proof for a simplified version of Time-Stamped Stack that preserves its most complex behaviors.
+While the abstract queue implementation in Section~\ref{sec:queues} can be adapted to stacks~\footnote{The only modification is that the linearization point $lin(pop,d,k)$ with $d\neq{\tt EMPTY}$ is enabled only if $k$ is added by a push which is maximal in the happens-before order stored in the state.}, it can not simulate (through forward simulations) existing stack implementations like the Time-stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} where the linearization points of the pop operations are not fixed. In this section, we define an abstract implementation which simulates such implementations provided that the point in time where the return value of a pop operation is determined corresponds to a fixed action. To demonstrate the use of this abstract implementation we provide a correctness proof for a simplified version of Time-Stamped Stack that preserves its most complex behaviors.
 
 \subsection{Abstract stack implementation}
 
@@ -50,7 +50,7 @@ int pop() {
 \vspace{-6mm}
 \caption{Time-Stamped Stack. We assume that every statement is atomic.}
 \label{fig:TimeStamped}
-\vspace{-1mm}
+\vspace{-8mm}
 \end{wrapfigure}
 We explain the meaning of the commit points on a simplified version of the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} given in Figure~\ref{fig:TimeStamped}. This stack implementation maintains a vector of singly-linked lists, one for each thread, where list nodes contain a data value (field {\tt data}), a timestamp (field {\tt ts}), the next pointer (field {\tt next}), and a boolean flag indicating whether the node represents a value removed from the stack (field {\tt taken}). Initially, each list contains a sentinel dummy node pointing to itself with timestamp $-1$ and the flag {\tt taken} set to {\tt false}.
 
@@ -59,29 +59,33 @@ Pushing a value to the stack proceeds in several steps: adding a node with maxim
 \begin{figure}[t]
 \centering
 \includegraphics[width=11cm]{fig-timeStamp.pdf}
-\caption{An execution of the Time-Stamped Stack. An operation is pictured by a line delimited by two circles denoting the call and respectively, the return action. For pop operations, we introduce another circle to represent a CAS returning {\tt true} which is the commit point of that operation. The state of the library after an execution prefix delimited at the right by a dotted line is pictured in the bottom part (the picture immediately to the left of the dotted line). Also, ${\tt i}_1$ denotes the value of {\tt i} in the pop operation with identifier 1.}
+\vspace{-4.5mm}
+\caption{An execution of the Time-Stamped Stack. An operation is pictured by a line delimited by two circles denoting the call and respectively, the return action. Pop operations with identifier $k$ and removing value $d$ are denoted by $pop(d,k)$ and their representation includes another circle to represent a CAS returning {\tt true} which is the commit point of that operation. The state of the library after an execution prefix delimited at the right by a dotted line is pictured in the bottom part (the picture immediately to the left of the dotted line). A pair $(d,t)$ for some value $d$ and integer $t$ represents a list node with ${\tt data}=d$ and ${\tt ts}=t$, and ${\tt i}_1$ denotes the value of {\tt i} in the pop operation with identifier 1. We omit the nodes where {\tt taken} is set to {\tt true}.}
 \label{fig:commit}
+\vspace{-7mm}
 \end{figure}
 
 
-The push operations don't have a fixed linearization point because adding a node to a list and updating its timestamp are not executed in a single atomic step. The nodes can be added in an order which is not consistent with the order between the timestamps assigned later in the execution. Also, the value added by a push that just added an element to a list can be popped before the value added by a completed push (since it has a maximal timestamp). The same holds for pop operations. The only reasonable choice for a linearization point is a successful CAS (that results in updating the field {\tt taken}).
+The push operations don't have a fixed linearization point because adding a node to a list and updating its timestamp are not executed in a single atomic step. The nodes can be added in an order which is not consistent with the order between the timestamps assigned later in the execution. Also, the value added by a push that just added an element to a list can be popped before the value added by a completed push (since it has a maximal timestamp). The same holds for pop operations. The only reasonable choice for a linearization point is a successful CAS (that results in updating the field {\tt taken}). Fig~\ref{fig:commit} pictures an execution showing that this action doesn't correspond to a linearization point, i.e., an execution for which the pop operations in every correct linearization are not ordered according to the order between successful CASs. In every correct linearization of that execution, the pop operation removing $x$ is ordered before the one removing $z$ although they perform a successful CAS in the opposite order.
 
-TODO GIVE AN EXAMPLE TO SHOW THE ISSUE WITH POP LINEARIZATION POINTS, AND TO SHOW THAT COMMIT POINTS ARE RIGHT LIMITS FOR THE INTERVAL OF A LIN POINT, I.E., A POP WITH A LATER COMMIT POINT CAN BE LINEARIZED BEFORE. NEED ONLY 2 POPS IN AN EXECUTION 
+An interesting property of the successful CASs in pop operations is that they fix the return value, i.e., the return value is {\tt youngest->data} where {\tt youngest} is the node updated by the CAS. We call such actions \emph{commit points}. More generally, commit points are actions that access shared variables, from which every control-flow path leads to the return control point and contains no more accesses to the shared memory (i.e., the return value is computed using only local variables).
 
-We consider a set of actions $Com(pop)=\set{com(pop,d,k):d\in\<Vals>, k\in\<Ops>}$, called \emph{commit points}, representing actions of a pop operation where its return value is determined. Usually, a stack implementation stores the pushed values into a data structure, e.g., a singly-linked list, and a pop operation contains an action (typically, a compare-and-swap) that removes an element from this data structure (or sets a flag associated to this element to a ``deleted'' state). Such an action represents a commit point since the pop operation will return the value stored in this element. 
+TODO WHAT CAN WE SAY ABOUT COMMIT POINTS IN OTHER IMPLEMENTATIONS
 
-// Initially each pool[i] points to a 
-// sentinel dummy node with ts = -1, 
-// next = null, taken=false
+%Usually, a stack implementation stores the pushed values into a data structure, e.g., a singly-linked list, and a pop operation contains an action (typically, a compare-and-swap) that removes an element from this data structure (or sets a flag associated to this element to a ``deleted'' state). Such an action represents a commit point since the pop operation will return the value stored in this element. 
 
 
-TODO DESCRIBE THE TIME-STAMPED STACK, EXPLAIN THAT NO METHOD HAS A FIXED LIN POINT, GIVE THE COMMIT POINTS, SHOW THAT COMMIT POINTS ARE NOT LIN POINTS
+%TODO GIVE AN EXAMPLE TO SHOW THE ISSUE WITH POP LINEARIZATION POINTS, AND TO SHOW THAT COMMIT POINTS ARE RIGHT LIMITS FOR THE INTERVAL OF A LIN POINT, I.E., A POP WITH A LATER COMMIT POINT CAN BE LINEARIZED BEFORE. NEED ONLY 2 POPS IN AN EXECUTION 
 
-COMMIT POINTS ARE LINEARIZATION POINTS WHEN THE LIBRARY IS INTERPRETED AS A MULTISET
+When the commit points of pop operations are fixed to particular implementation actions (e.g., a successful CAS) we assume that the library is an LTS over an alphabet that contains actions $com(pop,d,k)$ with $d\in\<Vals>$ and $k\in\<Ops>$. This action represents the commit point of the pop with identifier $k$ and returning value $d$. Let $Com(pop)$ denote the set of such actions.
+%We consider a set of actions $Com(pop)=\set{com(pop,d,k):d\in\<Vals>, k\in\<Ops>}$, called \emph{commit points}, representing actions of a pop operation where its return value is determined. 
+%TODO DESCRIBE THE TIME-STAMPED STACK, EXPLAIN THAT NO METHOD HAS A FIXED LIN POINT, GIVE THE COMMIT POINTS, SHOW THAT COMMIT POINTS ARE NOT LIN POINTS
+%
+%COMMIT POINTS ARE LINEARIZATION POINTS WHEN THE LIBRARY IS INTERPRETED AS A MULTISET
 
-We define an abstract stack implementation $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that essentially, similarly to $AbsQ$, maintains the happens-before order of the push operations whose value has not been yet removed. However, since the commit points are not necessarily linearization points, the pop operations are treated differently. Intuitively, each pop operation starts by taking a snapshot of the completed push operations which are maximal in the happens-before order and continuously tracks the push operations which are overlapping with it. The commit point is enabled only if the return value corresponds to one of the push operations in the initial snapshot, or to a push happening earlier when the values from the initial snapshot are removed by other pop operations, or to one of the push operations that overlaps with the pop. TODO EMPTY
+We define an abstract stack implementation $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that essentially, similarly to $AbsQ$, maintains the happens-before order of the push operations whose value has not been yet removed. However, since the commit points are not necessarily linearization points, the pop operations are treated differently. Intuitively, each pop operation starts by taking a snapshot of the completed push operations which are maximal in the happens-before order, and continuously tracks the push operations which are overlapping with it. The commit point $com(pop,d,k)$ with $d\neq {\tt EMPTY}$ is enabled only if $d$ was added by one of the push operations in the initial snapshot, or by a push happening earlier when all the values from the initial snapshot have been removed by other pops, or by one of the push operations that overlaps with pop $k$. The commit point $com(pop,{\tt EMPTY},k)$ is enabled only if all the values added by push operations ending before $k$ started have been removed (checking this condition relies again on the initial snapshot). The effect of the commit points is explained below through examples.
 
-\begin{wrapfigure}{l}{7cm}
+\begin{wrapfigure}{l}{6.8cm}
 \vspace{-8mm}
 \includegraphics[width=7cm]{fig-stack.pdf}
 %
@@ -92,15 +96,13 @@ We define an abstract stack implementation $AbsS$ over alphabet $C\cup R\cup Com
 \label{fig:stackSim}
 \vspace{-6mm}
 \end{wrapfigure}
-Figure~\ref{fig:stackSim} pictures two executions of $AbsQ$ for two extended histories (that include dequeue linearization points). The state of $AbsQ$ after each action is pictured as a graph below the action. The nodes of this graph represent enqueue operations and the edges happens-before constraints. Each node is labeled by a value (the input of the enqueue) and a flag {\tt PEND} or {\tt COMP} showing whether the operation is pending or completed. For instance, in the case of the first history, the dequeue linearization point $lin(deq,y,3)$ is enabled because the current happens-before contains a \emph{minimal} enqueue operation with input $y$. Note that a linearization point $lin(deq,x,3)$ is also enabled at this state.
+Figure~\ref{fig:stackSim} pictures two executions of $AbsS$ for two extended histories (that include pop commit points). For readability, we give the state of $AbsS$ only after several execution prefixes delimited at the right by a dotted line. We focus on pop operations because the effect of push invocations and returns is similar to enqueue invocations and returns in $AbsQ$. Let us first consider the history in the top part of the figure. The first $AbsS$ state we give for this history is reached after the call of the pop operation with identifier $3$. This shows the effect of a pop invocation: the maximal completed pushes according to the current happens-before (in this case the push with identifier $1$) are marked as $be(3)$ (from ``before'' operation 3), and the pending pushes are marked as $ov(3)$ (from ``overlapping'' with operation 3). As a side remark, any other push operation that starts after pop $3$ would be also marked as $ov(3)$.
+The commit point $com(pop,x,3)$ (pictured with a red circle) is enabled because $x$ was added by a push marked as $be(3)$. In this case, the effect of the commit point is that the push $1$ is removed from the happens-before (a more complicated case can be seen in the second execution). For the second pop, the commit point $com(pop,y,4)$ is enabled because $y$ was added by a push marked as $ov(4)$. The second execution shows an example where the marking $be(k)$ for some pop $k$ can be updated at commit points. When the two pop operations $5$ and $6$ start, the pushes $3$ and $4$ are marked as $be(5)$ and $be(6)$. Then, $com(pop,t,5)$ is enabled because $t$ was added by $push(t,4)$ which is marked as $be(5)$. Besides removing $push(t,4)$ from the state, the commit point must produce a state where a pop committing later, e.g., pop $6$, can remove $y$ which was added by a predecessor of $push(t,4)$ in the happens-before ($y$ could become the top of the stack when $t$ is removed). This history remains valid because $push(y,2)$ can be linearized after $push(x,1)$ and $push(z,3)$. Therefore, push 2, a predecessor of the push which is removed, is marked as $be(6)$. The other predecessor of the removed push, i.e., push $1$, is not marked as $be(6)$ because it happens before another push, i.e., push 3, which is already marked as $be(6)$ (the value added by push 3 should be removed as well before the value added by push 1 could become the top of the stack).
 
-
-TODO AN EXAMPLE FOR EACH CASE (HISTORIES OF THE TIME-STAMPED STACK)
-
-
-
-The states of $AbsS$ are tuples $\tup{O,<,\ell,rv,cp,be,ov}$ where $O\subseteq \<Ops>$ represents a set of operation identifiers (of previously invoked push operations), $<\subseteq O\times O$ is a strict partial order over $O$, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier in $O$ with a value and a flag that records whether the operation is pending or completed, $be:\<Ops> ~> 2^O$ records push operations that were maximal before a pop started or happening earlier provided that the values of all the push happening later have been removed, and $ov: \<Ops> ~> 2^O$ records push operations overlapping with a pop.
+The states of $AbsS$ are tuples $\tup{O,<,\ell,rv,cp,be,ov}$ where $<$ is a strict partial order over the set $O$ of operation identifiers, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier in $O$ with a value and a pending/completed flag, $rv:\<Ops> ~> \<Vals>$ records the return value of a pending pop fixed at its commit point, $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every push ($A_1, A_2$) or pop ($R_1,R_2,R_3$) operation, $be:\<Ops> ~> 2^O$ records push operations that were maximal before a pop started or happening earlier provided that the values of all the push happening later have been removed, and $ov: \<Ops> ~> 2^O$ records push operations overlapping with a pop.
 The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsS}.
+
+The transition rules which don't correspond to commit point actions are similar to those for $AbsQ$. The rule {\sc com-pop1} for $com(pop,d,k)$ is enabled only if there exists a push $k'$ which added value $d$ and which belongs to $be(k)$ or $ov(k)$. When enabled, the push $k'$ is removed from the set $O$ (and the order $<$) and for every other pop $k_1$ such that $k'$ belongs to $be(k_1)$, $k'$ is replaced in $be(k_1)$ by its predecessors for which no successor belongs already to $be(k_1)$. Also, $rv(k)$ is set to $d$. The rule {\sc com-pop1} for $com(pop,{\tt EMPTY},k)$ is enabled only if $be(k)$ is empty (i.e., all the values added by pushes ending before $k$, if any, have been removed). Then, $rv(k)$ is set to ${\tt EMPTY}$.
 
 \begin{figure} [t]
 {\scriptsize
@@ -108,81 +110,82 @@ The initial state has all these components set to $\emptyset$ and the transition
   \begin{mathpar}
     \inferrule[call-push]{
       k\not\in dom(cp) \\ 
-      d\neq {\tt EMPTY}
+      d\neq {\tt EMPTY} \\
+      \forall k'.\ ov'(k') = ov(k')\cup \{k\}
     }{
       O,<,\ell,rv,cp,be,ov 
-      \xrightarrow{inv(push,d,k)} \\
-      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto 1],be,ov[\forall k'.\ k'\mapsto ov(k')\cup \{k\}]
+      \xrightarrow{inv(push,d,k)} 
+      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1],be,ov'
     }\hspace{5mm}
 
     \inferrule[call-pop]{
       k\not\in dom(cp) \\
     }{
       O,<,\ell,rv,cp,be,ov
-      \xrightarrow{inv(pop,k)} \\
-      O,<,\ell,rv,cp[k\mapsto 1],be[k\mapsto maxCo(O)],ov[k\mapsto {\tt PEND}(O)]
+      \xrightarrow{inv(pop,k)} 
+      O,<,\ell,rv,cp[k\mapsto R_1],be[k\mapsto maxCo(O)],ov[k\mapsto {\tt PEND}(O)]
     }\hspace{5mm}
     
     \inferrule[ret-pop]{
-       cp(k) = 2 \\
+       cp(k) = R_2 \\
        rv(k)=d  
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{ret(pop,d,k)}
-      O,<,\ell,rv,cp[k\mapsto 3],be,ov
+      O,<,\ell,rv,cp[k\mapsto R_3],be,ov
     }\hspace{5mm}
 
     \inferrule[ret-push1]{
-      cp(k) = 1 \\
+      cp(k) = A_1 \\
       k \in O \\
       \ell(k) = (d,{\tt PEND}) 
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{ret(push,k)}
-      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto 2],be,ov
+      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto A_2],be,ov
     }\hspace{5mm}
-    
     \inferrule[ret-push2]{
-      cp(k) = 1 \\
+      cp(k) = A_1 \\
       k \not\in O 
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{ret(push,k)}
-      O,<,\ell,rv,cp[k\mapsto 2],be,ov
+      O,<,\ell,rv,cp[k\mapsto A_2],be,ov
     }\hspace{5mm}
 
-    \inferrule[lin-pop1]{
-       cp(k) = 1 \\
+    \inferrule[com-pop1]{
+       cp(k) = R_1 \\
        d\neq{\tt EMPTY} \\
-       k'\in be(k)\cup ov(k)\land \ell_1(k')=d \\
+       k'\in be(k)\cup ov(k) \\
+        \ell_1(k')=d \\
        \forall k_1.\ k'\not\in be(k_1) \Rightarrow be'(k_1)=be(k_1) \\     \\
        \forall k_1.\ k'\in be(k_1) \Rightarrow be'(k_1)=(be(k_1)\setminus\{k'\})\cup \{k_2: k_2\in pred_{<}(k') \land \forall k_3. k_2<k_3 => k_3\not\in be(k_1)\} \\
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{com(pop,d,k)} \\
-      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto 2],be',ov %be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}]
+      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2],be',ov %be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}]
     }\hspace{5mm}
 
-    \inferrule[lin-pop2]{
-       cp(k) = 1 \\
+    \inferrule[com-pop2]{
+       cp(k) = R_1 \\
        be(k)=\emptyset
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{com(pop,{\tt EMPTY},k)}
-      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto 2],be,ov
+      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto R_2],be,ov
     }\hspace{5mm}
 
     
       \end{mathpar}
   }
  \vspace{-5mm}
-  \caption{The transition relation of $AbsQ$. We use the following notions: $f[\forall k.guard(k)=> k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and $g(k)=expr(k)$ otherwise, $maxCo(O)$ is the set of maximally completed operations in $O$, i.e., $maxCo(O)=\set{k\in O: \ell_1(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_1(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.%\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.} 
+  \caption{The transition relation of $AbsQ$. We use the following notions: $maxCo(O)$ is the set of greatest operations in $O$ (w.r.t. $<$) which are completed, i.e., $maxCo(O)=\set{k\in O: \ell_1(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_1(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.%\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.}  $f[\forall k.\ k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=expr(k)$,   $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and 
   }
   \label{fig:transitions:AbsS}
 \vspace{-6mm}
 \end{figure}
 
-Let $AbsS_0$ be the standard abstract implementation of a concurrent stack (where elements are stored in a sequence, a push operation adds atomically an element at the beginning of the sequence, and a pop operation removes atomically an element from the beginning of the sequence)~\footnote{For $\<Methods>=\{push,pop\}$, the alphabet of $AbsS_0$ is $C\cup R\cup Lin$.}.
+Let $AbsS_0$ be the standard abstract implementation of a concurrent stack (where elements are stored in a sequence, a push operation adds atomically an element at the beginning of the sequence, and a pop operation removes atomically an element from the beginning of the sequence). For $\<Methods>=\{push,pop\}$, the alphabet of $AbsS_0$ is $C\cup R\cup Lin$.
 The following result states that the library $AbsS$ has exactly the same set of histories as $AbsS_0$ (see Appendix~\ref{app:absImplStack} for a proof).
 
 \begin{theorem}\label{th:absImplStack}
