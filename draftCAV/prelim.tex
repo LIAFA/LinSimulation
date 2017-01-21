@@ -142,6 +142,7 @@ The projection of a library trace over $C\cup R$ is called a \emph{history}. The
 Note that even a library that implements \emph{atomic methods}, e.g.,~by
 guarding method bodies with a global-lock acquisition, admits executions in
 which method calls and returns overlap. 
+For simplicity, Definition~\ref{def:libraries} assumes that every thread performs a single operation. The extension to multiple operations per thread is straightforward, e.g. the closure rules must assume that the actions $a$ and $c$ belong to different threads
 %A library which accesses the client's
 %thread identifiers can be modeled by taking thread identifiers as method
 %parameters.
