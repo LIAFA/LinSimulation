@@ -39,49 +39,97 @@
 
 \section{Existence of Forward Simulations for Stack Implementations that have Fixed Pop Linearization Points}
 \input{commit}
-First, describe the TS-Stack algorithm:
-
+First, we describe the TS-Stack algorithm:
 \begin{lstlisting}
-Type Node{
- elt:Vals;
- ts: int;
- next: Node;
- taken: bool;
+struct Node{
+  int data;
+  int ts;
+  Node* next;
+  boolean taken;
 };
+Node* pools[maxThreads];
+int TS = 0;   
 
-
-pools: [Tid]Node; //Keeps top of pools, 
-//Initially they point to sentinel dummy nodes s s.t.
-//s.next = s and s.ts = -1 and s.taken=false
-TSGen: int;    //Timestamp generator initially 0
-
-void push(e:Vals, tid:Tid){
-  Node n = new Node(e, MAX_INT, NULL, false);
-  n.next = pools[tid];
-  pools[tid] = n;
-  i: int = TSGen++;
-  n.ts = i;
+void push(int x) {
+  Node* n = new Node(x,MAX_INT,
+                        null,false);
+  n->next = pools[myTID];
+  pools[myTID] = n;
+  int i = TS++;
+  n->ts = i;
 }
-
-Vals pop(){
- success: bool = false;
- maxTS: int = -1;
- youngest: Node = NULL;
- while(!success){
-  maxTS: int = -1;
-  youngest = NULL;
-  for(current in pools){
-    n: Node = current;
-    while(n.taken && n.next != n)
-      n = n.next;
-    if(maxTS < n.ts)
-      youngest = n;
-  }
-  success = CAS(youngest.taken,false,true);
+int pop() {
+ boolean success = false;
+ int maxTS = -1;
+ Node* youngest = null;
+ while ( !success ) {
+   maxTS = -1; youngest = null;
+   for(int i=0; i<maxThreads; i++){
+     Node* n = pools[i];
+     while (n->taken && n->next != n)
+       n = n->next;
+     if(maxTS < n->ts) {
+       maxTS = n->ts; youngest = n;
+     }
+   }
+   if (youngest != null)
+     success=CAS(youngest->taken,
+                       false,true);
  }
- return youngest;
+ return youngest->data;
 }
-
 \end{lstlisting}
-\input{set}
+Then, we begin to obtain the LTS ($L_C$) of TS Stack from the algorithm by defining control points and the actions among these control points as seen in Figure X \textcolor{red}{Flow diagram is referenced here}. To simplify the proof, we take the initializations of some local variables together as atomic.
+
+States of the TS-Stack contains the global variables and local variables as fields. Global variables are just elements of their domains and local variables are maps from operation identifiers to their domains. We say $i_q(k)$ for referencing the value of local variable $i$ of operation $k$ in state $q$. There is only one special local variable called $myTID$. Its value is unique to each pending operation in a state i.e., concurrent operations cannot have the same $myTID$ value. TS-Stack states also contains sets $O_a, O_r \in \mathbb{O}$ which are operation identifier sets of push and pops respectively, and the control point function $cp$ which is a map from operation identifiers to the control points set that are presented in the flow diagram Figure X  \textcolor{red}{Flow diagram is referenced here}. Transition relation of the TS-STack is presented in Figure~\ref{fig:transitions:TSS}.
+Next, we show that the linearizability of TS Stack.
+
+\begin{figure} [t]
+{\scriptsize
+  \centering
+  \begin{mathpar}
+    \inferrule[call-push]{
+      k\not\in dom(cp) \\ 
+      d\neq {\tt EMPTY} \\
+      \forall k'.\ ov'(k') = ov(k')\cup \{k\}
+    }{
+      O,<,\ell,rv,cp,be,ov 
+      \xrightarrow{inv(push,d,k)} 
+      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1],be,ov'
+    }\hspace{5mm}
+
+    
+      \end{mathpar}
+  }
+ \vspace{-5mm}
+  \caption{The transition relation of TS-Stack
+  }
+  \label{fig:transitions:TSS}
+\vspace{-6mm}
+\end{figure}
+
+\begin{lem}
+$L_C$ is a Com(pop)- refinement of $AbsS$.
+\end{lem}
+\begin{proof}
+Since $AbsS$ is deterministic with respect to $C \cup R \cup Com(pop)$, there exists a Com(pop) forward simulation from $L_C$ to $AbsS$ iff $L_C$ is a Com(pop)-refinement of $AbsS$. Hence, we define the relation $fs$ and show that it is a Com(pop)-forward simulation relation.
+
+Let us make some clarifications before defining the relation. In order not to confuse nodes in TS Stack and nodes in $AbsS$, we call nodes of $AbsS$ as vertices from now on. We also define ordering relation (called traverse order) among the operations in a state of $TS$. It basically reflects the traverse order of pop operations. For two push operations $m,n \in O_a$ is state $s$ we say that $m <^{tr}_s n$ iff either $myTid(m) < myTid(n)$ or $myTid(m) = myTid(n)$ and $n_s(n)$ is reachable from $n_s(m)$ using next pointers. $\geq^{tr}$ is obtained from $<^{tr}$ in the usual way.
+
+The relation $fs \subseteq Q_C \rightarrow Q_{AbsS}$ contains $(s,t)$ iff the following are satisfied:
+\begin{itemize}
+\item[\emph{Nodes}] $k \in O_t$ iff $k$ is a push operation in $s$ ($k \in O_a$) such that either it has not inserted its node to the pool yet ( $cp_s(k) = A_i$ and $i<3$) or its node is not taken by a pop ($cp_s(k) = A_i$, $i\geq 3$ and $n_s(k)->taken = false$). 
+\item[\emph{Pend/Comp}] A vertex $k \in O_t$ is pending ($\ell_t(k) = (d, \texttt{PEND})$) iff $k$ satisfies the previous condition, $x_s(k) = d$ and it is not completed in $s$ ($cp_s(k) = A_i$ and $i<6$). Similarly, this vertex is completed ($\ell_t(k) = (d, \texttt{COMP})$) iff $k$ satisfies the previous condition, $x_s(k) = d$ and it is completed in $s$ ($cp_s(k) = A_6$). 
+\item[\emph{TSOrder}] If a node has a smaller timestamp than the other node in $s$, the operations that inserted them cannot be ordered reversely in $t$. More formally, let $k, k' \in O_t$ s.t. $n_s(k)-> ts < n_s(k')->ts$. Then, $k \nless_t k'$.
+\item[\emph{TidOrder}] Order among the nodes inserted by the same threads in $s$ must be preserved among the operations that inserted them in $t$. Let $k, k' \in O_t$ s.t. $myTid_s(k) = myTid_s(k')$ and $n_s(k)->ts < n_s(k')->ts$. Then, $k <_t k'$.
+\item[Frontiers] Every maximally closed or pending vertex can be removed by a pending pop. More formally, let $k \in O_t$ such that $\ell_t(k) = (\_,\texttt{PEND})$. Then, for all pops $p$, $k \in ov_t(p)$. In the other case, let $k \in O_t$ such that $\ell_t(k) = (\_,\texttt{COMP})$ and for all other $k' \in O_t$ such that $k<_t k'$, we know $\ell_t(k') = (\_,\texttt{PEND})$. Then, for all pop operations $p$, $k \in be_t(p)$ or $k \in ov_t(p)$. 
+\item[\emph{MaximalOV}] If a push $k \in O_t$ is a candidate to be removed by a pop $p$, then every other push $k'$ invoked after $k$ is a candidate to be removed by $p$ since $k$ is concurrent with $p$. More formally, let $k, k' \in O_t$ such that $k <_t k'$ and there exists a pop $p$ such that $k \in be_t(p)$ or $k \in ov_t(p)$. Then, $k' \in ov_t(p)$.
+\item[\emph{MinimalBE}] If a push $k \in O_t$ has finished before the pop $p$ is invoked and yet $k$ is a candidate to be removed by $p$, other pushes completed before $k$ can not be candidates to be removed by $p$ at that state. More formally, let $k, k' \in O_t$ such that $k <_t k'$ and there exists a pop $p$ such that $k' \in be_t(p)$. Then, neither $k \in be_t(p)$ nor $k \in ov_t(b)$.
+\item[\emph{ReverseFrontiers}] If a push $k \in O_t$ is concurrent with the pop $p$ and there exists another push $k' \in O_t$ that is immediate predecessor of $k$, then $k'$ is either concurrent or maximally closed with respect to $p$. More formally, let $k, k' \in O_t$ such that $k' \in pred_{<_t}(k)$ and $k \in ov_t(p)$ for some pop $p$. Then, either $k' \in ov_t(p)$ or $k' \in be_t(p)$. 
+\item[\emph{TraverseBefore}] If a pop operation $p$ is currently visiting node $n$ and there is a node $m$ coming before $n$ in the traverse order with a greater timestamp, then the operation that inserts $m$ must be concurrent with $p$. More formally, let $k \in O_t$ such that $n_s(k) <^{tr}_s n_s(p)$ and $n_s(k)->ts > n_s(p)->ts$. Then, $k \in ov_t(p)$.
+\item[\emph{TraverseAfter}] If a pop operation $p$ is currently visiting node $n$ and its youngest element $m$ is still not taken in state $s$, then either $m$ is a candidate to be removed by $p$ in $t$ or there exists a later node $m'$ than $n$ such that $m'$ is a candidate in $t$ it has a bigger timestamp than n. More formally, let $k, k' \in O_t$ such that $youngest_s(p) = n_s(k)$ and $n_s(k') = n_s(p)$. Then, either $k \in ov_t(p) \vee k \in be_t(p)$ or there exists $k'' \in O_t$ s.t. $n_s(k'')->ts > n_s(k) ->ts$ and $k'' \in ov_t(p) \vee k'' \in be_t(p)$ and either $k' <^{tr}_s k''$ or $n_s(p) = n_s(k'') \wedge cp_s(p) = R_j \wedge j>3$. 
+\end{itemize}
+\end{proof}
+
+%\input{set}
 \end{document}
