@@ -159,7 +159,7 @@ $AbsQ$ is a refinement of $AbsQ_0$ and vice-versa.
 A trace of a queue implementation is called \emph{$Lin(deq)$-complete} when every completed dequeue has a linearization point, i.e., TODO. A queue implementation $L$ over alphabet $\Sigma$ is called \emph{with fixed dequeue linearization points} if{f} $C\cup R\cup Lin(deq)\subseteq \Sigma$ 
 and every trace $@t\in Tr(L)$ is $Lin(deq)$-complete.
 
-TODO NEEDS DATA INDEPENDENCE FOR THE LINEARIZATION POINT TRANSITIONS TO BE DETERMINISTIC
+%TODO NEEDS DATA INDEPENDENCE FOR THE LINEARIZATION POINT TRANSITIONS TO BE DETERMINISTIC
 
 The following result shows that $C\cup R\cup Lin(deq)$-forward simulations are a sound and complete proof method for showing the correctness of a queue implementation with fixed dequeue linearization points (up to the correctness of the linearization points). It is obtained from Theorem~\ref{th:absImplQueue} and Theorem~\ref{th:forSim} using the fact that the alphabet of $AbsQ$ is exactly $C\cup R\cup Lin(deq)$ and $AbsQ$ is deterministic.
 
@@ -169,7 +169,7 @@ A queue implementation $L$ with fixed dequeue linearization points is a $C\cup R
 
 \subsection{A Correctness Proof For Herlihy\&Wing Queue}\label{ssec:HerlihyWing}
 
-We describe a forward simulation $\mathit{fs}$ from $\mathit{HWQ}$ to $AbsQ$. Essentially, an $AbsQ$ state associated by $\mathit{fs}$ to a $\mathit{HWQ}$ state consists of all the  enqueue operations for which the input is still present in the array {\tt items} and all the pending enqueue operations that have at most reserved an array position, ordered by a relation $<$ satisfying the following: 
+We describe a forward simulation $\mathit{fs}_1$ from $\mathit{HWQ}$ to $AbsQ$. Essentially, an $AbsQ$ state associated by $\mathit{fs}_1$ to a $\mathit{HWQ}$ state consists of all the  enqueue operations for which the input is still present in the array {\tt items} and all the pending enqueue operations that have at most reserved an array position, ordered by a relation $<$ satisfying the following: 
 \begin{itemize}
 	\item[(a)] pending enqueues are maximal, i.e., for every two enqueues $k$ and $k'$ such that $k'$ is pending, we have that $k'\not< k$,
 	\item[(b)] $<$ is consistent with the order in which positions of {\tt items} have been reserved, i.e., for every two enqueues $k$ and $k'$ such that ${\tt i}(k) < {\tt i}(k')$, we have that $k' \not< k$,
@@ -190,11 +190,11 @@ We describe a forward simulation $\mathit{fs}$ from $\mathit{HWQ}$ to $AbsQ$. Es
 
 An enqueue is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by  $(d,{\tt COMP})$, otherwise. Also, for every dequeue operation $k$ such that ${\tt x}(k)=d\neq {\tt null}$, we have that $rv(k)=d$.
 
-We show that $\mathit{fs}$ is indeed a $C\cup R\cup Lin(deq)$-forward simulation. Let $s$ and $t$ be states of $\mathit{HWQ}$ and $AbsQ$, respectively, such that $(s,t)\in\mathit{fs}$. 
+We show that $\mathit{fs}_1$ is indeed a $C\cup R\cup Lin(deq)$-forward simulation. Let $s$ and $t$ be states of $\mathit{HWQ}$ and $AbsQ$, respectively, such that $(s,t)\in\mathit{fs}_1$. 
 We omit discussing the trivial case of transitions labeled by call and return actions which are simulated by similar transitions of $AbsQ$ (for the return a dequeue operation $k$, we use the equality between the local variable ${\tt x}(k)$ in $s$ and the component $rv(k)$ in $t$). 
 %\textcolor{red}{ I think it is good to mention again that call/return actions in HWQ correspond to the same call/return actions in AbsQ (without any other internal action). I also think that invoke enqueue operation is non-trivial. Preservation of the strict partial order and all of the above items a, b and c needs to be rechecked.}
 
-We show that each internal step of an enqueue or dequeue, except the execution of {\tt swap} returning a non-null value in dequeue (which represents its linearization point), is simulated by an \emph{empty} sequence of $AbsQ$ transitions, i.e., for every state $s'$ obtained through one of these steps, if $(s,t)\in\mathit{fs}$, then $(s',t)\in\mathit{fs}$ for each $AbsQ$ state $t$. We focus on the following essential property, called \emph{monotonicity}: the set of possible orders $<$ associated by $\mathit{fs}$ to $s'$ doesn't exclude any order $<$ associated to $s$.
+We show that each internal step of an enqueue or dequeue, except the execution of {\tt swap} returning a non-null value in dequeue (which represents its linearization point), is simulated by an \emph{empty} sequence of $AbsQ$ transitions, i.e., for every state $s'$ obtained through one of these steps, if $(s,t)\in\mathit{fs}_1$, then $(s',t)\in\mathit{fs}_1$ for each $AbsQ$ state $t$. We focus on the following essential property, called \emph{monotonicity}: the set of possible orders $<$ associated by $\mathit{fs}_1$ to $s'$ doesn't exclude any order $<$ associated to $s$.
 %Essentially, this boils down to showing that the constraints over $<$ in the definition of $\mathit{fs}$ are an invariant for these steps.
 
 Concerning enqueues, let $s'$ be the state obtained from $s$ when a pending enqueue $k$ reserves an array position. This enqueue operation must be maximal in both $t$ and any state $t'$ related to $s'$ (because it is pending). Moreover, there is no dequeue that can ``observe'' this position before restarting the array traversal. Therefore, item (c) in the definition of $<$ doesn't constrain the order between $k$ and some other enqueue neither in $s$ nor in $s'$. Since this transition doesn't affect the constraints on the order between enqueue operations different from $k$ (their local variables remain unchanged), we have that monotonicity holds. This property is trivially satisfied by the second step of enqueue which doesn't affect {\tt i}.
@@ -209,7 +209,7 @@ To prove monotonicity in the case of dequeue internal steps different from its l
 % and ${\tt i}_{s}(k) = {\tt i}_{s'}(k_d)$. The latter constraint guarantees that this instantiation is not enabled in state $s$. The increment of {\tt i} being enabled, implies that 
 %
 The same is true for the increment of the iterator {\tt i} in a dequeue $k_d$ since the predicate $k_d\atCP {\tt if}\text{-}{\tt inc}$ holds in state $s$.
-The execution of {\tt swap} returning {\tt null} in a dequeue $k_d$ enables new instantiations $(k,k',k_d)$ in $s'$, thus adding potentially new constraints $k\not< k'$. We show however that these instantiations are vacuous because $k$ must be a pending enqueue in $s$ and thus maximal in any order relation $<$ associated by $\mathit{fs}$ to $s$.
+The execution of {\tt swap} returning {\tt null} in a dequeue $k_d$ enables new instantiations $(k,k',k_d)$ in $s'$, thus adding potentially new constraints $k\not< k'$. We show however that these instantiations are vacuous because $k$ must be a pending enqueue in $s$ and thus maximal in any order relation $<$ associated by $\mathit{fs}_1$ to $s$.
 Let $k$ and $k'$ be two enqueue operations such that together with the dequeue $k_d$ they satisfy the property (\ref{eq:inst}) in $s'$ but not in $s$. 
 We write ${\tt i}_s(k)$ to refer to the value of the variable {\tt i} of operation $k$ in state $s$. 
 This implies that ${\tt i}_{s'}(k) = {\tt i}_{s'}(k_d) \leq {\tt i}_{s'}(k')$ and ${\tt items}[{\tt i}_{s'}(k_d)]={\tt null}$. The latter implies that the enqueue $k$ didn't executed
