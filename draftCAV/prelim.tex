@@ -32,7 +32,7 @@ Programs interact with libraries by calling named library \emph{methods}, which
 receive \emph{parameter values} and yield \emph{return values} upon completion.
 We fix arbitrary sets $\<Methods>$ and $\<Vals>$ of method names and
 parameter/return values. 
-
+%
 %\begin{example}
 %  \label{ex:methods}
 %
@@ -43,8 +43,7 @@ parameter/return values.
 %  $\<Vals> = \<Nats> \u \set{ {\tt EMPTY} }$.
 %
 %\end{example}
-
-\noindent
+%
 We fix an arbitrary set $\<Ops>$ of operation identifiers, and for given sets
 $\<Methods>$ and $\<Vals>$ of methods and values, we fix the sets
 \begin{align*}
@@ -55,37 +54,37 @@ $\<Methods>$ and $\<Vals>$ of methods and values, we fix the sets
 of \emph{call actions} and \emph{return actions}; each call action $inv(m,d,k)$
 combines a method $m \in \<Methods>$ and value $d \in \<Vals>$ with an
 \emph{operation identifier} $k \in \<Ops>$. Operation identifiers are used to
-pair call and return actions. We denote the operation identifier of a
-call/return action $a$ by $\<op>(a)$. Call and return actions $c \in C$ and $r
-\in R$ are \emph{matching}, written $c \match r$, when $\<op>(c) = \<op>(r)$. 
-We may omit the second field from a call/return action $a$ for methods that have no inputs (e.g., the pop method of a stack) or return values (e.g., the push method of a stack).
-A word $\tau \in @S^*$ over alphabet $@S$, such that $(C \u R) \subseteq @S$, is
-\emph{well formed} when:
-\begin{itemize}
-
-  \item Each return is preceded by a matching call: \\
-  $\tau_j \in R$ implies $\tau_i \match \tau_j$ for some $i < j$.
-
-  \item Each operation identifier is used in at most one call/return: \\
-  $\<op>(\tau_i) = \<op>(\tau_j)$ and $i < j$ implies $\tau_i \match \tau_j$.
-
-\end{itemize}
-We say that the well-formed word $\tau \in @S^*$ is \emph{sequential} when
-\begin{itemize}
-
-  \item Operations do not overlap: \\
-  $\tau_i, \tau_k \in C$ and $i < k$ implies $\tau_i \match \tau_j$ for some $i < j < k$.
-
-\end{itemize}
-Well-formed words represent traces of a library. We assume every set of well-formed
+pair call and return actions. 
+%We denote the operation identifier of a
+%call/return action $a$ by $\<op>(a)$. Call and return actions $c \in C$ and $r
+%\in R$ are \emph{matching}, written $c \match r$, when $\<op>(c) = \<op>(r)$. 
+We may omit the second field from a call/return action $a$ for methods that have no inputs or return values.
+%A word $\tau \in @S^*$ over alphabet $@S$, such that $(C \u R) \subseteq @S$, is
+%\emph{well formed} when:
+%\begin{itemize}
+%
+%  \item Each return is preceded by a matching call: \\
+%  $\tau_j \in R$ implies $\tau_i \match \tau_j$ for some $i < j$.
+%
+%  \item Each operation identifier is used in at most one call/return: \\
+%  $\<op>(\tau_i) = \<op>(\tau_j)$ and $i < j$ implies $\tau_i \match \tau_j$.
+%
+%\end{itemize}
+%We say that the well-formed word $\tau \in @S^*$ is \emph{sequential} when
+%\begin{itemize}
+%
+%  \item Operations do not overlap: \\
+%  $\tau_i, \tau_k \in C$ and $i < k$ implies $\tau_i \match \tau_j$ for some $i < j < k$.
+%
+%\end{itemize}
+%Well-formed words represent traces of a library. 
+We assume every set of 
 words is closed under isomorphic renaming of operation identifiers. For
 notational convenience, we take $\<Ops>=\<Nats>$ for the rest of the paper.
-When the value of a certain field in a call/return action is not important we use 
-the placeholder $\_$, e.g., $inv(m,\_,k)$ instead of $inv(m,d,k)$ when the input  
-$d$ can take any value.
+%When the value of a certain field in a call/return action is not important we use 
+%the placeholder $\_$, e.g., $inv(m,\_,k)$ instead of $inv(m,d,k)$ when the input  
+%$d$ can take any value.
 
-An operation $k$ is called \emph{completed} in a well-formed trace $\tau$ when
-$ret(m,d,k)$ occurs in $\tau$, for some $m$ and $d$. Otherwise, it is called \emph{pending}.
 %An operation $o$ of an execution $e$ is \emph{completed}
 %when both call and return actions $m(u)_o$ and $\<ret>(v)_o$ of $o$ occur in
 %$e$, and is otherwise \emph{pending}.
@@ -110,68 +109,71 @@ $ret(m,d,k)$ occurs in $\tau$, for some $m$ and $d$. Otherwise, it is called \em
 %
 %\end{example}
 
-Libraries dictate the execution of methods between their call and return
-points. Accordingly, a library cannot prevent a method from being called,
-though it can decide not to return. Furthermore, any library action performed
-in the interval between call and return points can also be performed should the
-call have been made earlier, and/or the return made later. 
-A library thus allows any sequence of
-invocations to its methods made by \emph{some} program.
+A \emph{library} is an LTS over alphabet $\Sigma$ such that $C \u R\subseteq \Sigma$. 
+We assume that the traces of a library satisfy standard well-formedness properties, 
+e.g., return actions correspond to previous call actions, which for lack of 
+space are delegated to Appendix~\ref{app:prelim}. An operation $k$ is called \emph{completed} in a trace $\tau$ when
+$ret(m,d,k)$ occurs in $\tau$, for some $m$ and $d$. Otherwise, it is called \emph{pending}.
 
-\begin{definition}\label{def:libraries}
-A \emph{library} $L$ is an LTS over alphabet $\Sigma$ such that $C \u R\subseteq \Sigma$
-and each trace $\tau \in Tr(L)$ is well formed, and
-  \begin{itemize}
 
-    \item Call actions $c \in C$ cannot be disabled: \\
-    $\tau \cdot \tau' \in Tr(L)$ implies $\tau \cdot c \cdot \tau' \in Tr(L)$
-    if $\tau \cdot c \cdot \tau'$ is well formed.
-  
-    \item Call actions $c \in C$ cannot disable other actions: \\
-    $\tau \cdot a \cdot c \cdot \tau' \in Tr(L)$ implies $\tau \cdot c \cdot a \cdot \tau' \in Tr(L)$.
-  
-    \item Return actions $r \in R$ cannot enable other actions: \\
-    $\tau \cdot r \cdot a \cdot \tau' \in Tr(L)$ implies $\tau \cdot a \cdot r \cdot \tau' \in Tr(L)$.
-  
-  \end{itemize}
-
-\end{definition}
-
-The projection of a library trace over $C\cup R$ is called a \emph{history}. The set of histories of a library $L$ is denoted by $H(L)$.
-
-Note that even a library that implements \emph{atomic methods}, e.g.,~by
-guarding method bodies with a global-lock acquisition, admits executions in
-which method calls and returns overlap. 
-For simplicity, Definition~\ref{def:libraries} assumes that every thread performs a single operation. The extension to multiple operations per thread is straightforward, e.g. the closure rules must assume that the actions $a$ and $c$ belong to different threads
-%A library which accesses the client's
-%thread identifiers can be modeled by taking thread identifiers as method
-%parameters.
+%Libraries dictate the execution of methods between their call and return
+%points. Accordingly, a library cannot prevent a method from being called,
+%though it can decide not to return. Furthermore, any library action performed
+%in the interval between call and return points can also be performed should the
+%call have been made earlier, and/or the return made later. 
+%A library thus allows any sequence of
+%invocations to its methods made by \emph{some} program.
+%
+%\begin{definition}\label{def:libraries}
+%A \emph{library} $L$ is an LTS over alphabet $\Sigma$ such that $C \u R\subseteq \Sigma$
+%and each trace $\tau \in Tr(L)$ is well formed, and
+%  \begin{itemize}
+%
+%    \item Call actions $c \in C$ cannot be disabled: \\
+%    $\tau \cdot \tau' \in Tr(L)$ implies $\tau \cdot c \cdot \tau' \in Tr(L)$
+%    if $\tau \cdot c \cdot \tau'$ is well formed.
+%  
+%    \item Call actions $c \in C$ cannot disable other actions: \\
+%    $\tau \cdot a \cdot c \cdot \tau' \in Tr(L)$ implies $\tau \cdot c \cdot a \cdot \tau' \in Tr(L)$.
+%  
+%    \item Return actions $r \in R$ cannot enable other actions: \\
+%    $\tau \cdot r \cdot a \cdot \tau' \in Tr(L)$ implies $\tau \cdot a \cdot r \cdot \tau' \in Tr(L)$.
+%  
+%  \end{itemize}
+%
+%\end{definition}
+%
+%%Note that even a library that implements \emph{atomic methods}, e.g.,~by
+%%guarding method bodies with a global-lock acquisition, admits executions in
+%%which method calls and returns overlap. 
+%For simplicity, Definition~\ref{def:libraries} assumes that every thread performs a single operation. The extension to multiple operations per thread is straightforward, e.g. the closure rules must assume that the actions $a$ and $c$ belong to different threads
+%%A library which accesses the client's
+%%thread identifiers can be modeled by taking thread identifiers as method
+%%parameters.
 
 %\textcolor{red}{For the below paragraph, I cannot see the equivalence  of informal explanation and formal definition of weakening. I think the formal one should be if a ret comes before a call in $h_1'$ then this order is preserved in $h_2$. But the definition says iff. Ignore this if I am wrong.}
+The projection of a library trace over $C\cup R$ is called a \emph{history}. The set of histories of a library $L$ is denoted by $H(L)$.
 Since libraries only dictate methods’ executions between their respective calls and returns, for any history they admit, they must also 
-admit histories with weaker inter-operation ordering, in which calls may happen earlier, and/or returns later. This weakening relation
-between histories can be formalized as follows: a history $h_1$ is \emph{weaker} than a history $h_2$, written $h_1 \sqsubseteq h_2$, 
-if{f} there exists a well-formed history $h_1'$
+admit histories with weaker inter-operation ordering, in which calls may happen earlier, and/or returns later. A 
+history $h_1$ is \emph{weaker} than a history $h_2$, written $h_1 \sqsubseteq h_2$, 
+if{f} there exists a history $h_1'$
 obtained from $h_1$ by appending return actions, and deleting call actions,
-such that:
-\begin{quote}
-
+s.t.:
   $h_2$ is a permutation of $h_1'$ that preserves the order between
   return and call actions, i.e.,~if a given return action occurs before a given
   call action in $h_1'$, then the same holds in $h_2$.
+%A call action $inv(\_,\_,k)$ may happen before a return action $ret(\_,\_,k')$ in $h_1$ (the operations $k$ and $k'$ overlapping in time) while it can be permuted after that return action in $h_2$, thus introducing a new inter-operation ordering (operation $k'$ ending before $k$). 
 
-\end{quote}
-A call action $inv(\_,\_,k)$ may happen before a return action $ret(\_,\_,k')$ in $h_1$ (the operations $k$ and $k'$ overlapping in time) while it can be permuted after that return action in $h_2$, thus introducing a new inter-operation ordering (operation $k'$ ending before $k$). 
-
-$\overline{H}$ denotes the closure $\set{h: \exists h' \in H.\ h \sqsubseteq h'}$ of a 
-history set $H$ under weakening.
-A direct consequence of Definition~\ref{def:libraries} is that $H(L)=\overline{H(L)}$ for
-every library $L$. A \emph{kernel} of L is any set $K$ such that $\overline{K} = H(L)$.
-A library $L$ is called atomic if it has a sequential kernel. 
+%$\overline{H}$ denotes the closure $\set{h: \exists h' \in H.\ h \sqsubseteq h'}$ of a 
+%history set $H$ under weakening.
+%We assume that $H(L)=\overline{H(L)}$ for
+%every library $L$. %A \emph{kernel} of L is any set $K$ such that $\overline{K} = H(L)$.
+A library $L$ is called \emph{atomic} when there exists a set $S$ of sequential histories such that 
+$H(L)$ contains every weakening of a history in $S$.
 Atomic libraries are often considered as specifications for concurrent objects. 
-In practice, libraries can be made atomic by guarding their methods bodies with global lock acquisitions.
+Libraries can be made atomic by guarding their methods bodies with global lock acquisitions.
 
-A library $L$ is called a \emph{queue implementation} when its alphabet contains call and return actions defined over $\<Methods>=\{enq,deq\}$ ($enq$ is the name of the methods that enqueue a value, and $deq$ is the name of the methods that dequeue a value) and $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$ where {\tt EMPTY} is the value returned by $deq$ when the queue is empty. Similarly, a library $L$ is called a \emph{stack implementation} when $\<Methods>=\{push,pop\}$ and  $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$.
+A library $L$ is called a \emph{queue implementation} when $\<Methods>=\{enq,deq\}$ ($enq$ is the method that enqueues a value and $deq$ is the method removing a value) and $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$ where {\tt EMPTY} is the value returned by $deq$ when the queue is empty. Similarly, a library $L$ is called a \emph{stack implementation} when $\<Methods>=\{push,pop\}$ and  $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$. For queue and stack implementations, we assume that the same value is never added twice, i.e., for every trace $@t$ of such a library and every two call actions $inv(m,d_1,k_1)$ and $inv(m,d_2,k_2)$ where $m\in \{enq,push\}$ we have that $d_1\neq d_2$. As shown in several works~\cite{conf/tacas/AbdullaHHJR13,DBLP:conf/icalp/BouajjaniEEH15}, this assumption is without loss of generality for libraries that are data independent, i.e., their behaviors are not influenced by the values added to the collection, which is always the case in practice. On a technical note, this assumption is used to define ($\Gamma$-)deterministic abstract implementations of stacks and queues in Section~\ref{sec:queues} and Section~\ref{sec:stacks}.
 
 
 %\begin{example}
@@ -226,15 +228,16 @@ $L_1$ and $L_2$ implementing the methods of some concurrent object, we
 say $L_1$ refines $L_2$ if{f} every computation of every program
 using $L_1$ would also be possible were $L_2$ used instead. We assume that a program can 
 interact with the library only through call and return actions, and thus refinement can be defined
-as history set inclusion. As shown in~\citet{journals/tcs/FilipovicORY10,DBLP:conf/popl/BouajjaniEEH15},
-refinement is equivalent to the \emph{linearizability} criterion~\cite{journals/toplas/HerlihyW90} when $L_2$ is an atomic library. 
+as history set inclusion. Refinement is equivalent to the \emph{linearizability} criterion~\cite{journals/toplas/HerlihyW90} 
+when $L_2$ is an atomic library~\cite{journals/tcs/FilipovicORY10,DBLP:conf/popl/BouajjaniEEH15}.
+. 
 %We fix a set of methods $\<Methods>$ and values $\<Vals>$.
 
 %\textcolor{red}{We have two Definition 1. The problem occurs because we used different commands for definitions.}
 \begin{definition}
-Let $L_1$ and $L_2$ be two libraries. 
+%Let $L_1$ and $L_2$ be two libraries. 
 %agreeing on $\mathcal{M}$ and $\mathcal{D}$ sets. We define the set $A\Sigma = \{inv(m,d,i)| m \in \mathcal{M} \wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\} \cup \{ret(m,d,i)| m \in \mathcal{M}\wedge d \in \mathcal{D} \wedge i \in \mathbb{N}\}$ as abstract transition labels. Note that $A\Sigma \subseteq \Sigma_{L_1}$ and $A\Sigma \subseteq \Sigma_{L_2}$. 
-The library $L_1$ \emph{refines} $L_2$ if{f} $H(L_1) \subseteq H(L_2)$.
+A library $L_1$ \emph{refines} another library $L_2$ if{f} $H(L_1) \subseteq H(L_2)$.
 %We say that $L_1$ \emph{refines} $L_2$ when $H(L_1) \subseteq H(L_2)$.
 %for every trace $e \in Tr(L_1)$, there exists a trace $e' \in Tr(L_2)$ such that $e|A\Sigma$ is equivalent to $e'|A\Sigma$.
 \end{definition}
