@@ -68,5 +68,3 @@ $
 \item[$langle ii-b-pop \rangle$] Let $(q, ret(pop,d,k), q') \in \delta_A$ and $t \in fs[q]$. We pick $t'$ such that $(t, ret(pop,d,k) t') \in \delta_I$. Only difference between $t$ and $t'$ is that $f_{t'}(k) = R_2$ whereas $f_t(k) = R_1$. Since $s_q = s_{q'}$ and $so_t = so_{t'}$, $s_{q'}$ is a valid linearization of $so_{t'}$. By checking the other conditions, we see that $t' \in fs[q']$.  
 \end{itemize}
 \end{proof}
-
-Now, we show that TS-Stack is linearizable by showing the concrete TS-Stack implementation $L_C$ is a cs-refinement of $L_I$. As $L_C$, we pick the simplest version that omits the \texttt{EMPTY} returns of the pop  methods, does not allow unlinking and elimination.
