@@ -1,4 +1,37 @@
 %!TEX root = draft.tex
 \section{Introduction}
 
+Efficient implementations of concurrent objects such as semaphores, locks, and atomic collections including stacks and queues are vital to modern computer systems. Programming them is however error prone. To minimize synchronization overhead between concurrent object-method invocations, implementors avoid blocking operations like lock acquisition, allowing methods to execute concurrently. However, concurrency risks unintended inter-operation interference, and risks conformance to atomic reference implementations. Conformance is formally captured by \emph{observational refinement}, which assures that all behaviors of programs
+using these efficient implementations would also be possible were the atomic
+reference implementations used instead.
+An equivalent property is \emph{linearizability}~\cite{journals/toplas/HerlihyW90} which requires that each concurrent execution
+has a linearization which is a valid sequential execution according to a
+specification, given by an abstract data type or reference implementation.
+
+Existing proof methods for refinement/linearizability combine reductions to assertion checking with compositional reasoning techniques for proving the assertions.
+
+The reductions to assertion checking are based on simulation relations: the assertions describe a simulation relation to standard atomic reference implementations
+
+No surprise, simulations are the standard approach for proving refinement
+
+This works smoothly for particular classes of implementations, e.g., with fixed linearization points. The explanation is that in this case, forward simulations are enough and the reference implementation is deterministic when the linearization points are observable
+
+Why they are enough ? Forward simulations are not complete for proving refinement: the reference implementation is not deterministic when projected over call and returns. 
+
+However, in this case, the set of observable actions includes the linearization points. And the reference implementations becomes deterministic for this larger set of observable actions.
+
+Determinism also simplifies the assertions
+
+When linearization points are not observable, reference implementations are not deterministic and one may need backward simulations. There is a paper arguing for this fact ~\cite{DBLP:conf/cav/SchellhornWD12}.
+
+However, using backward simulations is hard, they require prophecy variables. They are not good for automation.
+
+Question: We want to avoid backward simulations, so what can we do about implementations without fixed linearization points, e.g, Herlihy\&Wing, Time-Stamped Stack ? Can they be proved using forward simulations ?
+
+We answer positively for queues and stacks. The idea is to define new abstract implementations over a set of observable actions bigger than the set of call/returns, but smaller than all linearization points.
+
+Queues: only dequeues have fixed linearization points.
+
+Stacks: pops have fixed commit points
+
 \newpage~\newpage
