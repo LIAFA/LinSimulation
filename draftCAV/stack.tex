@@ -73,7 +73,7 @@ The push operations don't have a fixed linearization point because adding a node
 
 An interesting property of the successful CASs in pop operations is that they fix the return value, i.e., the return value is {\tt youngest->data} where {\tt youngest} is the node updated by the CAS. We call such actions \emph{commit points}. More generally, commit points are actions that access shared variables, from which every control-flow path leads to the return control point and contains no more accesses to the shared memory (i.e., after a commit point, the return value is computed using only local variables).
 
-The complete version of $\mathit{TSS}$~\cite{DBLP:conf/popl/DoddsHK15} contains also a mechanism for elimination (a pop can remove a value without traversing all the lists if it has been added by a concurrent push) and emptiness checking. In both cases, the commit points can be identified in the code and correspond to certain boolean conditions evaluated to {\tt true}.
+%The complete version of $\mathit{TSS}$~\cite{DBLP:conf/popl/DoddsHK15} contains also a mechanism for elimination (a pop can remove a value without traversing all the lists if it has been added by a concurrent push) and emptiness checking. In both cases, the commit points can be identified in the code and correspond to certain boolean conditions evaluated to {\tt true}.
 
 %TODO WHAT CAN WE SAY ABOUT COMMIT POINTS IN OTHER IMPLEMENTATIONS
 
@@ -113,7 +113,7 @@ Formally, the states of $AbsS$ are tuples $\tup{O,<,\ell,rv,cp,be,ov}$ where $<$
 %The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsS}.
 All the components are $\emptyset$ in the initial state, and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsS}.
 
-The transition rules which don't correspond to commit point actions are similar to those for $AbsQ$. The rule {\sc com-pop1} for $com(pop,d,k)$ is enabled only if there exists a push $k'$ which added value $d$ and which belongs to $be(k)$ or $ov(k)$. When enabled, the push $k'$ is removed from the set $O$ (and the order $<$) and for every other pop $k_1$ such that $k'$ belongs to $be(k_1)$, $k'$ is replaced in $be(k_1)$ by its predecessors for which no successor belongs already to $be(k_1)$. Also, $rv(k)$ is set to $d$. The rule {\sc com-pop1} for $com(pop,{\tt EMPTY},k)$ is enabled only if $be(k)$ is empty (i.e., all the values added by pushes ending before $k$, if any, have been removed). Then, $rv(k)$ is set to ${\tt EMPTY}$.
+The transition rules which don't correspond to commit point actions are similar to those for $AbsQ$. The rule {\sc com-pop1} for $com(pop,d,k)$ is enabled only if there exists a push $k'$ which added value $d$ and which belongs to $be(k)$ or $ov(k)$. When enabled, the push $k'$ is removed from the set $O$ (and the order $<$) and for every other pop $k_1$ such that $k'$ belongs to $be(k_1)$, $k'$ is replaced in $be(k_1)$ by its predecessors which are followed exclusively by pushes overlapping with $k_1$ (these predecessors become maximal closed pushes once $k'$ is removed). Also, $rv(k)$ is set to $d$. The rule {\sc com-pop1} for $com(pop,{\tt EMPTY},k)$ is enabled only if $be(k)$ is empty (i.e., all the values added by pushes ending before $k$, if any, have been removed). Then, $rv(k)$ is set to ${\tt EMPTY}$.
 
 \begin{figure} [t]
 \vspace{-2mm}
@@ -130,6 +130,7 @@ The transition rules which don't correspond to commit point actions are similar 
       O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1],be,ov'
     }\hspace{5mm}
 
+    \vspace{-1mm}
     \inferrule[call-pop]{
       k\not\in dom(cp) %\\ k\not\in dom(cp) \\ k\not\in dom(cp)
     }{
@@ -138,6 +139,7 @@ The transition rules which don't correspond to commit point actions are similar 
       O,<,\ell,rv,cp[k\mapsto R_1],be[k\mapsto maxCo(O)],ov[k\mapsto {\tt PEND}(O)]
     }\hspace{5mm}
     
+    \vspace{-1mm}
     \inferrule[ret-pop]{
        cp(k) = R_2 \\
        rv(k)=d  
@@ -147,6 +149,7 @@ The transition rules which don't correspond to commit point actions are similar 
       O,<,\ell,rv,cp[k\mapsto R_3],be,ov
     }\hspace{5mm}
 
+    \vspace{-1mm}
     \inferrule[ret-push1]{
       cp(k) = A_1 \\
       k \in O \\
@@ -171,14 +174,14 @@ The transition rules which don't correspond to commit point actions are similar 
        k'\in be(k)\cup ov(k) \\
         \ell_1(k')=d \\
        \forall k_1.\ k'\not\in be(k_1) \Rightarrow be'(k_1)=be(k_1) \\     \\
-       \forall k_1.\ k'\in be(k_1) \Rightarrow be'(k_1)=(be(k_1)\setminus\{k'\})\cup \{k_2: k_2\in pred_{<}(k') \land \forall k_3. k_2<k_3 => k_3\not\in be(k_1)\} \\
+       \forall k_1.\ k'\in be(k_1) \Rightarrow be'(k_1)=(be(k_1)\setminus\{k'\})\cup \{k_2: k_2\in pred_{<}(k') \land \forall k_3. (k_2\in pred_{<}(k_3) \land k_3\neq k') => k_3\in ov(k_1)\} \\
     }{
       O,<,\ell,rv,cp,be,ov
       \xrightarrow{com(pop,d,k)} \\
       O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2],be',ov %be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}]
     }\hspace{5mm}
 
-    
+    %\vspace{-1mm}
     \inferrule[com-pop2]{
        cp(k) = R_1 \\
        be(k)=\emptyset
@@ -191,7 +194,7 @@ The transition rules which don't correspond to commit point actions are similar 
     
       \end{mathpar}
   }
- \vspace{-5mm}
+ \vspace{-6mm}
   \caption{The transition relation of $AbsQ$. We use the following notions: $maxCo(O)$ is the set of greatest operations in $O$ (w.r.t. $<$) which are completed, i.e., $maxCo(O)=\set{k\in O: \ell_2(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_2(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.%\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.}  $f[\forall k.\ k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=expr(k)$,   $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and 
   }
   \label{fig:transitions:AbsS}
@@ -201,10 +204,10 @@ The transition rules which don't correspond to commit point actions are similar 
 Let $AbsS_0$ be the standard abstract implementation of a stack (where elements are stored in a sequence; push, resp., pop operations add, resp., remove, an element from the beginning of the sequence in one atomic step). For $\<Methods>=\{push,pop\}$, the alphabet of $AbsS_0$ is $C\cup R\cup Lin$.
 The following result states that the library $AbsS$ has exactly the same set of histories as $AbsS_0$ (see Appendix~\ref{app:absImplStack} for a proof).
 
-\vspace{-1mm}
+\vspace{-2mm}
 \begin{theorem}\label{th:absImplStack}
 $AbsS$ is a refinement of $AbsS_0$ and vice-versa.
-\vspace{-1mm}
+\vspace{-2mm}
 \end{theorem}
 
 A trace of a stack implementation is called \emph{$Com(pop)$-complete} when every completed pop has a commit point, i.e., each return $ret(pop,d,k)$ is preceded by an action $com(pop,d,k)$. A stack implementation $L$ over $\Sigma$, such that $C\cup R\cup Com(pop)\subseteq \Sigma$, is called \emph{with fixed pop commit points} when every trace $@t\in Tr(L)$ is $Com(pop)$-complete.
@@ -213,15 +216,24 @@ A trace of a stack implementation is called \emph{$Com(pop)$-complete} when ever
 
 As a consequence of Theorem~\ref{th:forSim}, $C\cup R\cup Com(pop)$-forward simulations are a sound and complete proof method for showing the correctness of a stack implementation with fixed pop commit points (up to the correctness of the commit points). 
 
-TODO EXPLAIN THAT THIS IS DIFFERENT W.R.T. QUEUES ($Abs_0$ doesn't have commit points).
+%TODO EXPLAIN THAT THIS IS DIFFERENT W.R.T. QUEUES ($Abs_0$ doesn't have commit points).
 
 \vspace{-1.5mm}
 \begin{corollary}
-A stack implementation $L$ with fixed pop commit points is a $C\cup R\cup Com(pop)$-refinement of $AbsS$ if{f} there exists a $C\cup R\cup Com(pop)$-forward simulation from $L$ to $AbsS$.
+A stack $L$ with fixed pop commit points is a $C\cup R\cup Com(pop)$-refinement of $AbsS$ if{f} there is a $C\cup R\cup Com(pop)$-forward simulation from $L$ to $AbsS$.
 \vspace{-1.5mm}
 \end{corollary}
 
-\vspace{-3.5mm}
+Linearization points can also be seen as commit points and thus the following holds.
+
+\vspace{-1.5mm}
+\begin{corollary}
+A stack implementation $L$ with fixed pop linearization points where transition labels $lin(pop,d,k)$ are substituted with $com(pop,d,k)$ is a $C\cup R\cup Com(pop)$-refinement of $AbsS_0$ if{f} there is a $C\cup R\cup Com(pop)$-forward simulation from $L$ to $AbsS$.
+\vspace{-1.5mm}
+\end{corollary}
+
+
+\vspace{-6mm}
 \subsection{A Correctness Proof For Time-Stamped Stack}
 \vspace{-1mm}
 We describe a forward simulation $\mathit{fs}_2$ from $\mathit{TSS}$ to $AbsS$. Except for the constraints on the components $be$ and $ov$ of a $AbsS$ state, it is similar to the simulation $\mathit{fs}_1$ from $\mathit{HWQ}$ to $AbsQ$. Thus, the $AbsS$ states $t=\tup{O,<,\ell,rv,cp,be,ov}$ associated by $\mathit{fs}_2$ to a $\mathit{TSS}$ state $s$ satisfy the following. The set $O$ consists of all the identifiers of pushes in $s$ which didn't added yet a node to {\tt pools} or for which the input is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). A push $k$ is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by $(d,{\tt COMP})$, otherwise. 
@@ -231,6 +243,7 @@ Also, $k \leadsto_s k'$ when intuitively, a traversal of {\tt pools}  would enco
 The order relation $<$ satisfies the following: (1) pending pushes are maximal, (2) $<$ is consistent with the order between node timestamps, i.e., ${\tt ts}_s(k) \leq {\tt ts}_s(k')$ implies $k'\not< k$, and (3) $<$ includes the order between pushes executed in the same thread, i.e., ${\tt TID}_s(k) = {\tt TID}_s(k')$ and ${\tt ts}_s(k) < {\tt ts}_s(k')$ implies $k < k'$.
 
 The components $be$ and $ov$ satisfy the following constraints (their domain is the set of identifiers of pending pops):
+\vspace{-2mm}
 \begin{itemize}
 	\item every pop overlaps with all pending pushes, i.e., $k_1\in O$ is pending implies $k_1\in ov(k)$ for each $k, k_1$
 	\item completed pushes which are maximal in $<$ are either overlapping with a pop $k$ or they were maximal in $<$ when $k$ started, i.e., every such push belongs either to $be(k)$ or $ov(k)$ for each $k$
@@ -238,7 +251,8 @@ The components $be$ and $ov$ satisfy the following constraints (their domain is 
 	\item $be(k)$ and $ov(k)$ don't contain predecessors of pushes from $be(k)$, i.e., $k_1 < k_2$ and $k_2 \in be(k)$ implies $k_1\not\in be(k)\cup ov(k)$ for each $k, k_1, k_2$
 	\item immediate predecessors of pushes overlapping with a given pop $k$ are either overlapping with $k$ or they were maximal in $<$ when $k$ started, i.e., $k_2\in pred_{<}(k_1)$ and $k_1\in ov(k)$ implies $k_2\in be(k)\cup ov(k)$ for each $k,k_1,k_2$
 	\item a pop $k$ that reached a node with timestamp $\tau$ (its variable {\tt n} points to this node) overlaps with any push that has a timestamp bigger than $\tau$ and which created a node that occurs in {\tt pools} before the node reached by $k$, i.e., ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, and ${\tt ts}_s(k_2) \geq {\tt ts}_s(k_1)$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
-	\item if the variable {\tt youngest} of a pop $k$ points to a node which is not taken, then this node was created by a push in $be(k)\cup ov(k)$ or the node currently reached by $k$ is followed in {\tt pools} by another node which was created by a push in $be(k)\cup ov(k)$, i.e., ${\tt youngest}_s(k)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(k)={\tt n}_s(k_2)$ implies $k_1\in be(k)\cup ov(k)$ or that there exists $k_3\in O$ such that ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, $k_3\in be(k)\cup ov(k)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and $k$ is traversing the last list in the array {\tt pools}, for each $k, k_1,k_2$.
+	\item if the variable {\tt youngest} of a pop $k$ points to a node which is not taken, then this node was created by a push in $be(k)\cup ov(k)$ or the node currently reached by $k$ is followed in {\tt pools} by another node which was created by a push in $be(k)\cup ov(k)$, i.e., ${\tt youngest}_s(k)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(k)={\tt n}_s(k_2)$ implies $k_1\in be(k)\cup ov(k)$ or that there exists $k_3\in O$ such that ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, $k_3\in be(k)\cup ov(k)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and TODO $k$ is traversing the last list in the array {\tt pools}, for each $k, k_1,k_2$.
+\vspace{-2mm}
 \end{itemize}
 Finally, for every pop operation $k$ such that ${\tt success}(k)={\tt true}$, we have that $rv(k)={\tt youngest}(k)\text{\tt->data}$. 
 
