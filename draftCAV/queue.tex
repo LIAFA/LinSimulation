@@ -2,18 +2,18 @@
 \vspace{-3.5mm}
 \section{Queues With Fixed Dequeue Linearization Points}\label{sec:queues}
 \vspace{-1.5mm}
-The typical abstract implementation of a concurrent queue, denoted as $AbsQ_0$, maintains a sequence of values, the enqueue method adds a value atomically to the beginning of the sequence, and the dequeue method removes a value from the end of the sequence (if any, otherwise it returns {\tt EMPTY}). Both methods have a fixed linearization point when the update of the shared sequence happens. %~\footnote{For $\<Methods>=\{enq,deq\}$, the alphabet of $AbsQ_0$ is $C\cup R\cup Lin$.}. 
-For some queue implementations, e.g., the Herlihy\&Wing Queue~\cite{journals/toplas/HerlihyW90} ($\mathit{HWQ}$ for short), there exists no forward simulation to $AbsQ_0$ although they are a refinement of $AbsQ_0$. The main reason is that the enqueue methods in these implementations don't have a \emph{fixed} linearization point. 
-In this section, we propose a new abstract implementation for queues, denoted as $AbsQ$, which roughly maintains a \emph{partially-ordered set} of values instead of a sequence. We show that there exists a forward simulation from any correct queue implementation where only the \emph{dequeue} methods have fixed linearization points (the enqueue methods are unconstrained) to $AbsQ$. This covers all the queue implementations that we are aware of, in particular $\mathit{HWQ}$. 
- We also describe a forward simulation from $\mathit{HWQ}$ to $AbsQ$.
+The typical abstract implementation of a concurrent queue, denoted as $AbsQ_0$, maintains a sequence of values, the enqueue adds a value atomically to the beginning of the sequence, and the dequeue removes a value from the end of the sequence (if any, otherwise it returns {\tt EMPTY}). Both methods have a fixed linearization point when the update of the sequence happens. %~\footnote{For $\<Methods>=\{enq,deq\}$, the alphabet of $AbsQ_0$ is $C\cup R\cup Lin$.}. 
+For some queue implementations, e.g., the Herlihy\&Wing Queue~\cite{journals/toplas/HerlihyW90} ($\mathit{HWQ}$ for short), there exists no forward simulation to $AbsQ_0$ although they are a refinement of $AbsQ_0$. The main reason is that the enqueue methods don't have a \emph{fixed} linearization point. 
+In this section, we propose a new abstract implementation for queues, denoted as $AbsQ$, which roughly maintains a \emph{partially-ordered set} of values instead of a sequence. We show that there exists a forward simulation from any correct queue implementation where only the \emph{dequeue} methods have fixed linearization points (the enqueue methods are unconstrained) to $AbsQ$. This covers all the queue implementations that we are aware of, in particular $\mathit{HWQ}$, Baskets Queue~\cite{DBLP:conf/opodis/HoffmanSS07}, LCRQ~\cite{DBLP:conf/ppopp/MorrisonA13}, or Time-Stamped Queue~\cite{DBLP:conf/popl/DoddsHK15} (where the enqueues don't have fixed linearization points). 
+We also describe a forward simulation from $\mathit{HWQ}$ to $AbsQ$.
 
-TODO HOW CAN WE CONVINCE THAT OTHER IMPLEMENTATIONS HAVE THE SAME PROPERTY ?
+%TODO HOW CAN WE CONVINCE THAT OTHER IMPLEMENTATIONS HAVE THE SAME PROPERTY ?
 \vspace{-3.5mm}
 \subsection{Enqueue Methods With Non-Fixed Linearization Points}
-\vspace{-1.5mm}
+\vspace{-1mm}
 % describe a queue implementation listed in Figure~\ref{fig:HerlihyWing} and known as the Herlihy \& Wing Queue~\cite{journals/toplas/HerlihyW90} ($\mathit{HWQ}$ for short), where only the dequeue methods have fixed linearization points. 
 \begin{wrapfigure}{l}{5.3cm}
-\vspace{-8mm}
+\vspace{-10mm}
 \begin{lstlisting}
 void enq(int x){
   i = back++;
@@ -32,7 +32,7 @@ int deq() {
 \label{fig:HerlihyWing}
 \vspace{-7mm}
 \end{wrapfigure}
-We describe $\mathit{HWQ}$ as an instance of a queue implementation where the linearization points of the enqueue methods are not fixed.
+We describe $\mathit{HWQ}$ which is a queue implementation where the linearization points of the enqueue methods are not fixed.
 The shared state consists of an array {\tt items} storing the values in the queue and a counter {\tt back} storing the index of the first unused position in {\tt items}. Initially, all the positions in the array are {\tt null} and {\tt back} is 0.
 An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position can't be used by other enqueues) and then, stores the input value {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
 
@@ -52,7 +52,8 @@ Assuming that the linearization point corresponds to the assignment of {\tt i}, 
 %\vspace{-1.5mm}
 %\end{align*}
 
-The dequeue method has a fixed linearization point which corresponds to an execution of {\tt swap} returning a non-null value. This action alone contributes to the effect of that value being removed from the queue. This claim will be formally proved in Section~\ref{ssec:HerlihyWing}.
+The dequeue method has a fixed linearization point which corresponds to an execution of {\tt swap} returning a non-null value. This action alone contributes to the effect of that value being removed from the queue. Every concurrent history can be linearized to a sequential history where dequeues occur in the order of their linearization points in the concurrent history.
+This claim is formally proved in Section~\ref{ssec:HerlihyWing}.
 
 Since the linearization points of the enqueues are not fixed, there exists no forward simulation from $\mathit{HWQ}$ to $AbsQ_0$. 
 In the following, we describe the abstract implementation $AbsQ$ for which such a forward simulation does exist.
