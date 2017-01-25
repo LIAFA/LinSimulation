@@ -234,7 +234,7 @@ A stack implementation $L$ with fixed pop linearization points where transition 
 
 
 \vspace{-6mm}
-\subsection{A Correctness Proof For Time-Stamped Stack}
+\subsection{A Correctness Proof For Time-Stamped Stack}\label{sec:corr_tss}
 \vspace{-1mm}
 We describe a forward simulation $\mathit{fs}_2$ from $\mathit{TSS}$ to $AbsS$. Except for the constraints on the components $be$ and $ov$ of a $AbsS$ state, it is similar to the simulation $\mathit{fs}_1$ from $\mathit{HWQ}$ to $AbsQ$. Thus, the $AbsS$ states $t=\tup{O,<,\ell,rv,cp,be,ov}$ associated by $\mathit{fs}_2$ to a $\mathit{TSS}$ state $s$ satisfy the following. The set $O$ consists of all the identifiers of pushes in $s$ which didn't added yet a node to {\tt pools} or for which the input is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). A push $k$ is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by $(d,{\tt COMP})$, otherwise. 
 
@@ -256,7 +256,7 @@ The components $be$ and $ov$ satisfy the following constraints (their domain is 
 \end{itemize}
 Finally, for every pop operation $k$ such that ${\tt success}(k)={\tt true}$, we have that $rv(k)={\tt youngest}(k)\text{\tt->data}$. 
 
-The proof that $\mathit{fs}_2$ is indeed a forward simulation from $\mathit{TSS}$ to $AbsS$ follows the same lines as the one given for the Herlihy\&Wing Queue. It can be found in Appendix~\ref{}.
+The proof that $\mathit{fs}_2$ is indeed a forward simulation from $\mathit{TSS}$ to $AbsS$ follows the same lines as the one given for the Herlihy\&Wing Queue. It can be found in Appendix~\ref{app:tss}.
 
 
 
