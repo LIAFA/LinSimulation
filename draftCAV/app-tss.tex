@@ -279,33 +279,19 @@ The relation $\mathit{fs}_2 \subseteq Q_C \rightarrow Q_{AbsS}$ contains $(s,t)$
 \item[\emph{TraverseBeforeNull}] If a pop operation $p$ is currently visiting node $n$, and its $youngest$ field is \texttt{null}, then every other node $m$ coming before $n$ in the traverse order must be concurrent with $p$. More formally , let $youngest_s(p) = \texttt{null}$ and assume there exists  an operation $k \in O_t$ such that $n_s(k) \neq \texttt{null}$, $n_s(k)->taken = \texttt{false}$ and  $n_s(k) <^{tr}_s n_s(p)$. Then, $k \in ov_t(p)$. 
 \item[\emph{TraverseAfter}] If a pop operation $p$ is currently visiting node $n$ that is not null and its youngest element $m$ is not null and still not taken in state $s$, then either $m$ is a candidate to be removed by $p$ in $t$ or there exists a later node $m'$ than $n$ such that $m'$ is a candidate in $t$ and it has a bigger timestamp than n. More formally, assume that there exists $k, k' \in O_t$ such that $youngest_s(p)->taken \neq false$, $youngest_s(p) = n_s(k)$ and $n_s(k') = n_s(p)$. Then, either $k \in ov_t(p) \vee k \in be_t(p)$ or there exists $k'' \in O_t$ s.t. $n_s(k'')->ts > n_s(k) ->ts$ and $k'' \in ov_t(p) \vee k'' \in be_t(p)$ and either $k' <^{tr}_s k''$ or $n_s(p) = n_s(k'') \wedge cp_s(p) = R_j \wedge j<5$. 
 \end{itemize}
-Next, we will show that $\mathit{fs}_2$ is really a Com(pop)-forward simulation relation. Except the trivial base case, we case-split on the transition rules. We first assume $(s, \alpha s') \in \delta_C$ and $t \in \mathit{fs}_2[s]$. Then, we find  corresponding transition $\alpha' \in \Sigma_{AbsS}$ obeying the Com(pop)-forward simulation relation conditions and obtain $t'$ such that $(t, \alpha' t') \in \delta_{AbsS}$  and $t' \in \mathit{fs}_2[s']$.
+Next, we will show that $\mathit{fs}_2$ is really a $C\cup R\cup Com(pop)$-forward simulation relation. Except the trivial base case, we case-split on the transition rules. We first assume $s \xrightarrow{\alpha}_{TSS} s' $ and $t \in \mathit{fs}_2[s]$. Then, we find  corresponding transition $\alpha' \in \Sigma_{AbsS}$ obeying the $C\cup R\cup Com(pop)$-forward simulation relation conditions and obtain $t'$ such that $t \xrightarrow{\alpha'}_{AbsS} st $  and $t' \in \mathit{fs}_2[s']$.
 
 We observe that if $\alpha \in C \cup R \cup Com(pop)$, then the corresponding rule in $AbsS$ is $\alpha' = \alpha$. Otherwise, $\alpha' = \epsilon$.
 
-Let the following derivation rule of $TSS$ be the one for describing $\alpha$:
-\begin{mathpar}
-    \inferrule{
-      \psi
-    }{
-      s
-      \xrightarrow{\alpha} 
-      s'
-    }
-\end{mathpar}
-and the following one be the derivation rule of $AbsS$ describing $\alpha'$ if $\alpha' \neq \epsilon$ (equivalently $\alpha' = \alpha$):
-\begin{mathpar}
-    \inferrule{
-      \psi'
-    }{
-      q
-      \xrightarrow{\alpha'} 
-      q'
-    }
-\end{mathpar}
-For the cases $\alpha' = \alpha$, we first need to show $\alpha'$ is enabled in state $t$ i.e., $t$ satisfies $\psi'$. If this can not be directly obtained from $s$ satisfies $\psi$ and using one or two obvious conditions on $\mathit{fs}_2$ (since $t \in \mathit{fs}_2[s]$), we show the derivation in the proof. Then, $t'$ is obtained in a unique way since $AbsS$ is deterministic on its alphabet $ \Sigma_{AbsS} = C \cup R \cup Com(pop)$. The, only other thing to show is $t' \in \mathit{fs}_2[t']$. We show this by proving that $t'$ does not violate any of the conditions of the $\mathit{fs}_2$ described above. We only explain why the new instantiations due to the difference between $s'$ and $s$ or the difference between $t'$ and $t$ do not violate the conditions. We skip the instances that we assumed while relating $s$ to $t$.
+Let the following describe $\alpha$: $\psi \triangleright s\xrightarrow{\alpha}_{TSS} s'$ where $\psi$ is the precondition (guard) that needs to be satisfied for enabling $\alpha$ and $\psi' \triangleright t \xrightarrow{\alpha'}_{AbsS} t'$ describe the $\alpha'$ if $\alpha' \neq \epsilon$ (equivalently $\alpha' = \alpha$).
 
-For the cases in which $\alpha' = \epsilon$, we have $t'=t$ and the only thing to show is $t \in \mathit{fs}_2[s']$. Again, we only explain why the new instantions due to the difference between $s'$ and $s$ do not violate the conditions.
+For the cases $\alpha' = \alpha$, we first need to show $\alpha'$ is enabled in state $t$ i.e., $t$ satisfies $\psi'$. If this can not be directly obtained from the information that $s$ satisfies $\psi$ and using one or two obvious conditions on $\mathit{fs}_2$ (since $t \in \mathit{fs}_2[s]$), we show the derivation in the proof. Then, $t'$ is obtained in a unique way since $AbsS$ is deterministic on its alphabet $ \Sigma_{AbsS} = C \cup R \cup Com(pop)$. The, only other thing to show is $t' \in \mathit{fs}_2[t']$. We show this by proving that $t'$ does not violate any of the conditions of the $\mathit{fs}_2$ described above. Suppose conditions on $\mathit{fs}_2$ are of the form $\forall \overline{k}. guard_{s,t}(\overline{k}) \triangleright \phi_{s,t}(\overline{k})$ where the $overline{k}$ is a vector of operation identifiers and $\phi$ defined on states $s$ and $t$ must hold if the guard defined on $s$ and $t$ holds. We say that a vector $\overline{k_1}$ is a new instantiation of the condtion if $\overline{k_1}$ not satisfy the $guard_{s,t}$ while relating pre-states, but it satisfies $guard_{s',t'}$ while relating post-states and $\phi_{s',t'}$ needs to be checked non-trivially.
+
+We only explain why the new instantiations due to the difference between $s'$ and $s$ or the difference between $t'$ and $t$ do not violate the conditions. We skip the instances that we assumed while relating $s$ to $t$.
+
+For the cases in which $\alpha' = \epsilon$, we have $t'=t$ and the only thing to show is $t \in \mathit{fs}_2[s']$. Again, we only explain why the new instantiations due to the difference between $s'$ and $s$ do not violate the conditions.
+
+In the following, we show that $\mathit{fs}_2$ is a $C \cup R \cup Com(pop)$-forward simulation relation.
 \begin{itemize}
 \item[\textsc{init}] $\mathit{fs}_2[{q_0}_{TSS}] =\{{q_0}_{AbsS}\}$
 \item[\textsc{call-push}] The same derivation rule of $TSS$ is applied to $t$  to obtain $t'$. The premise of the rule is satisfied by $t$ trivially in the sense explained before. The new vertex $k$ is added to the $O_t$ such that $k$ is maximal, pending and every completed vertex is ordered before $k$ in $t'$. Moreover, $k$ is overlapping with every pending pop. To see that $t' \in \mathit{fs}_2[s']$ we observe the following: \emph{Nodes} condition is preserved because $k \in O_{t'}$. Since the newly added vertex $k$ is maximal and pending in $t'$, \emph{Pend/Comp} condition is preserved. \emph{Frontiers} and \emph{MaximalOV} conditions are not violated since $k$ is added to $ov(p)$ set for every pending pop operation $p$. 
@@ -366,5 +352,3 @@ For the \emph{MinimalBE} condition, we do not have a new instance. If $k' \in be
 %\textcolor{red}{TODO: CheckTraverseBeforeNull for the cases befoere pop 5.}
 %\textcolor{red}{TODO: Apply Dr. Enea's comments.}
 %\textcolor{red}{TODO: Try case split on fs conditions instantiations check.}
-%\textcolor{red}{TODO: Add Flow Diagrams to the paper.} 
-%\textcolor{red}{TODO: }
