@@ -41,9 +41,20 @@
 % return youngest->data;
 %}
 %\end{lstlisting}
-The LTS corresponding to the description of $TSS$ given in Fig.~\ref{fig:TimeStamped} is defined as usual. The control points and transition labels we use in the following proof are pictured in Fig.~\ref{} \textcolor{red}{Flow diagram is referenced here}. To simplify the proof, we take the initializations of some local variables together as atomic.
+\begin{figure}[t]
+\centering
+\includegraphics[width=10cm]{tssPushFlow.pdf}
+\includegraphics[width=12cm]{tssPopFlow.pdf}
+\vspace{-8mm}
+\caption{The flow diagram for the pop and push methods of the Time-Stamped Stack algorithm. The blue points show the control points roughly and the arrows show the possible transitions.}
+\label{fig:tssFlow}
+\end{figure}
 
-States of the TS-Stack contains the global variables and local variables as fields. Global variables are just elements of their domains and local variables are maps from operation identifiers to their domains. We say $i_q(k)$ for referencing the value of local variable $i$ of operation $k$ in state $q$. There is only one special local variable called $myTID$. Its value is unique to each pending operation in a state i.e., concurrent operations cannot have the same $myTID$ value. TS-Stack states also contains sets $O_a, O_r \in \mathbb{O}$ which are operation identifier sets of push and pops respectively, and the control point function $cp$ which is a map from operation identifiers to the control points set that are presented in the flow diagram Figure X  \textcolor{red}{Flow diagram is referenced here}. Transition relation of the TS-STack is presented in Figure~\ref{fig:transitions:TSSPush} (push rules) and Figure~\ref{fig:transitions:TSSPop} (pop rules).
+
+
+The LTS corresponding to the description of $TSS$ given in Fig.~\ref{fig:TimeStamped} is defined as usual. The control points and transition labels we use in the following proof are pictured in Fig.~\ref{fig:tssFlow}. To simplify the proof, we take the initializations of some local variables together as atomic.
+
+States of the TS-Stack contains the global variables and local variables as fields. Global variables are just elements of their domains and local variables are maps from operation identifiers to their domains. We say $i_q(k)$ for referencing the value of local variable $i$ of operation $k$ in state $q$. There is only one special local variable called $myTID$. Its value is unique to each pending operation in a state i.e., concurrent operations cannot have the same $myTID$ value. TS-Stack states also contains sets $O_a, O_r \in \mathbb{O}$ which are operation identifier sets of push and pops respectively, and the control point function $cp$ which is a map from operation identifiers to the control points set that are presented in the flow diagram Figure ~\ref{fig:tssFlow}. Transition relation of the TS-STack is presented in Figure~\ref{fig:transitions:TSSPush} (push rules) and Figure~\ref{fig:transitions:TSSPop} (pop rules).
 Next, we show that the linearizability of TS Stack.
 
 \begin{figure} [t]
@@ -350,10 +361,10 @@ For the \emph{MinimalBE} condition, we do not have a new instance. If $k' \in be
 \item[\textsc{ret-pop}] $t'$ is obtained by applying \textsc{ret-pop} rule of $AbsS$ and $t' \in \mathit{fs}_2[s']$.
 \end{itemize}
 \end{proof}
-\textcolor{red}{TODO: Check ReverseFrontiers for the cases before compop.}
-\textcolor{red}{TODO: Check TraverseBefore for the cases before pop2.}
-\textcolor{red}{TODO: CheckTraverseBeforeNull for the cases befoere pop 5.}
-\textcolor{red}{TODO: Apply Dr. Enea's comments.}
-\textcolor{red}{TODO: Try case split on fs conditions instantiations check.}
-\textcolor{red}{TODO: Add Flow Diagrams to the paper.} 
-\textcolor{red}{TODO: }
+%\textcolor{red}{TODO: Check ReverseFrontiers for the cases before compop.}
+%\textcolor{red}{TODO: Check TraverseBefore for the cases before pop2.}
+%\textcolor{red}{TODO: CheckTraverseBeforeNull for the cases befoere pop 5.}
+%\textcolor{red}{TODO: Apply Dr. Enea's comments.}
+%\textcolor{red}{TODO: Try case split on fs conditions instantiations check.}
+%\textcolor{red}{TODO: Add Flow Diagrams to the paper.} 
+%\textcolor{red}{TODO: }
