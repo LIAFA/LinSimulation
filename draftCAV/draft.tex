@@ -46,7 +46,7 @@
 \newtheorem{dfn}{Definition}
 \newtheorem{lem}{Lemma}
 
-\title{Proofs of Linearizability Based on Forward Simulations}
+\title{Proving linearizability using forward simulations}
 \author{ }
 \institute{ } 
 \begin{document}
@@ -55,8 +55,14 @@
 
 \maketitle
 
+\vspace{-10mm}
 \begin{abstract}
+Efficient concurrent implementations of abstract data structures such as stacks and queues are especially susceptible to programming errors, and necessitate automatic verification.
+Linearizability is the correctness criterion in this context. It allows to establish observational refinement between a concurrent implementation and an atomic reference implementation.
+Proving linearizability, or equivalently observational refinement, requires identifying linearization points for each method invocation along all possible computations, leading to valid sequential executions, or alternatively, establishing forward and backward simulations. In both cases, carrying out proofs is hard and complex in general. In particular, backward reasoning is difficult in the context of programs with data structures, and strategies for identifying statically linearization points cannot be defined for all existing implementations.  In this paper, we show that, contrary to common belief, many such complex implementations, including, e.g., the Herlihy\&Wing queue and the Time-Stamped Stack, can be proved correct using only forward simulation arguments. This leads to simple and natural correctness proofs for these implementations that are amenable to automation. 
 
+%Efficient implementations of atomic objects such as concurrent stacks and queues are especially susceptible to programming errors, and necessitate automatic verification. Unfortunately their correctness criteria -- conformance to atomic reference implementations -- are hard to verify. Conformance can be formalized as a trace inclusion problem, also known as observational refinement, which in general, can be proved using compositions of forward and backward simulations. Contradicting common belief, we show that many complex implementations, e.g., the Herlihy and Wing queue and the Time-Stamped Stack, can be proved correct using only forward simulation arguments. We define classes of queue and stack implementations for which forward simulations are sound and complete for proving their correctness.
+\vspace{-2mm}
 \end{abstract}
 
 \input{intro}
