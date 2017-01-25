@@ -245,15 +245,21 @@ The order relation $<$ satisfies the following: (1) pending pushes are maximal, 
 The components $be$ and $ov$ satisfy the following constraints (their domain is the set of identifiers of pending pops):
 \vspace{-2mm}
 \begin{itemize}
-	\item every pop overlaps with all pending pushes, i.e., $k_1\in O$ is pending implies $k_1\in ov(k)$ for each $k, k_1$
-	\item the greatest completed pushes in $<$ are either overlapping with a pop $k$ or they were the greatest completed pushes when $k$ started, i.e., every such push belongs either to $be(k)$ or $ov(k)$ for each $k$
-	\item for every push that overlaps with a pop $k$ or was maximal in $<$ when $k$ started, its successors are overlapping with $k$, i.e., $k_1\in be(k)\cup ov(k)$ and $k_1 < k_2$ implies $k_2 \in ov(k)$ for each $k, k_1, k_2$
-	\item $be(k)$ and $ov(k)$ don't contain predecessors of pushes from $be(k)$, i.e., $k_1 < k_2$ and $k_2 \in be(k)$ implies $k_1\not\in be(k)\cup ov(k)$ for each $k, k_1, k_2$
-	\item immediate predecessors of pushes overlapping with a given pop $k$ are either overlapping with $k$ or they were maximal in $<$ when $k$ started, i.e., $k_2\in pred_{<}(k_1)$ and $k_1\in ov(k)$ implies $k_2\in be(k)\cup ov(k)$ for each $k,k_1,k_2$
-	\item a pop $k$ that reached a node with timestamp $\tau$ (its variable {\tt n} points to this node) overlaps with any push that has a timestamp bigger than $\tau$ and which created a node that occurs in {\tt pools} before the node reached by $k$, i.e., ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, and ${\tt ts}_s(k_2) \geq {\tt ts}_s(k_1)$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
-	\item if the variable {\tt youngest} of a pop $k$ points to a node which is not taken, then this node was created by a push in $be(k)\cup ov(k)$ or the node currently reached by $k$ is followed in {\tt pools} by another node which was created by a push in $be(k)\cup ov(k)$, i.e., ${\tt youngest}_s(k)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(k)={\tt n}_s(k_2)$ implies $k_1\in be(k)\cup ov(k)$ or that there exists $k_3\in O$ such that ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, $k_3\in be(k)\cup ov(k)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and TODO $k$ is traversing the last list in the array {\tt pools}, for each $k, k_1,k_2$.
+	\item a pop $k$ with ${\tt youngest}\neq {\tt null}$ that reached a node with timestamp $\tau$ (its variable {\tt n} points to this node) overlaps with every push that created a node with a timestamp bigger than $\tau$ and which occurs in {\tt pools} before the node reached by $k$, i.e., ${\tt youngest}_s(k)\neq{\tt null}$, ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, ${\tt n}_s(k_2)\text{\tt ->taken}={\tt false}$, and ${\tt ts}_s(k_2) \geq {\tt ts}_s(k_1)$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
+	\item a pop $k$ with ${\tt youngest}={\tt null}$ overlaps with every push that created a node which occurs in {\tt pools} before the node reached by $k$,
+i.e., ${\tt youngest}_s(k)={\tt null}$, ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, and ${\tt n}_s(k_2)\text{\tt ->taken}={\tt false}$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
+	\item if the variable {\tt youngest} of a pop $k$ points to a node which is not taken, then this node was created by a push in $be(k)\cup ov(k)$ or the node currently reached by $k$ is followed in {\tt pools} by another node which was created by a push in $be(k)\cup ov(k)$, i.e., ${\tt youngest}_s(k)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(k)={\tt n}_s(k_2)$ implies $k_1\in be(k)\cup ov(k)$ or that there exists $k_3\in O$ such that ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, $k_3\in be(k)\cup ov(k)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and TODO $k$ is traversing the last list in the array {\tt pools}, for each $k, k_1,k_2$
+%	
+%	\item every pop overlaps with all pending pushes, i.e., $k_1\in O$ is pending implies $k_1\in ov(k)$ for each $k, k_1$
+%	\item the greatest completed pushes in $<$ are either overlapping with a pop $k$ or they were the greatest completed pushes when $k$ started, i.e., every such push belongs either to $be(k)$ or $ov(k)$ for each $k$
+%	\item for every push that overlaps with a pop $k$ or was maximal in $<$ when $k$ started, its successors are overlapping with $k$, i.e., $k_1\in be(k)\cup ov(k)$ and $k_1 < k_2$ implies $k_2 \in ov(k)$ for each $k, k_1, k_2$
+%	\item $be(k)$ and $ov(k)$ don't contain predecessors of pushes from $be(k)$, i.e., $k_1 < k_2$ and $k_2 \in be(k)$ implies $k_1\not\in be(k)\cup ov(k)$ for each $k, k_1, k_2$
+%	\item if all immediate successors of a given push $k_1$ are overlapping with a pop $k$, then $k_1$ is either overlapping with $k$ or it was a greatest completed push when $k$ started, 
+%	if $k_2\in ov(k)$, for every $k_2$ s.t. $k_1 \in pred_{<}(k_2)$, then $k_1\in be(k)\cup ov(k)$ for each $k,k_1$
 \vspace{-2mm}
 \end{itemize}
+There are some more constraints on $be$ and $ov$ that can be seen as invariants of $AbsS$, i.e., $be(k)$ and $ov(k)$ don't contain predecessors of pushes from $be(k)$ (for each $k, k_1, k_2$, $k_1 < k_2$ and $k_2 \in be(k)$ implies $k_1\not\in be(k)\cup ov(k)$). They can be found in Appendix~\ref{app:tss}.
+
 Finally, for every pop operation $k$ such that ${\tt success}(k)={\tt true}$, we have that $rv(k)={\tt youngest}(k)\text{\tt->data}$. 
 
 The proof that $\mathit{fs}_2$ is indeed a forward simulation from $\mathit{TSS}$ to $AbsS$ follows the same lines as the one given for the Herlihy\&Wing Queue. It can be found in Appendix~\ref{app:tss}.
