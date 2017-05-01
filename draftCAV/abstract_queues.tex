@@ -1,0 +1,55 @@
+%!TEX root = draft.tex
+\section{Abstract queues}
+
+\lstset{language={program}}
+
+\begin{figure}[t]
+{	\centering
+	\underline{Enqueue-Order Signature}
+	\begin{align*}
+		& \mathsf{Operations}, \mathsf{Values} : \mathsf{Sort} \\
+		& \mathsf{before} : \mathsf{Operations} \times \mathsf{Operations} &\mbox{ // the happens-before order between enqueues} \\
+		& \mathsf{stored}, \mathsf{pending} : \mathsf{Operations} &\mbox{ // the status of an enqueue} \\
+		& \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} &\mbox{ // the argument of an enqueue} \\
+	\end{align*}
+}
+
+\begin{minipage}[t]{6cm}
+\begin{lstlisting}
+void enq($\mathsf{Values}$ x) {
+ k = *; 
+ assume $\neg \mathsf{stored}$(k);
+ atomic {
+  $\mathsf{arg}$(k) = x;
+  $\mathsf{pending}$(k) = true;
+  $\mathsf{before}$ = $\mathsf{before}\cup\{(k',k)\,|\,\mathsf{stored}(k')\mbox{ and}$
+                     $\neg \mathsf{pending}(k')\}$  
+ }
+ atomic {
+  if ( $\mathsf{stored}$(k) )
+    $\mathsf{pending}$(k) = false;
+ }
+}
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}[t]{5cm}
+\begin{lstlisting}
+$\mathsf{Values}$ deq() {
+ atomic {
+  if ( * and $\forall k.\ \mathsf{stored}(k)\Rightarrow \mathsf{pending}(k)$)
+    ret = EMPTY
+  else {
+    k = *;
+    assume $\mathsf{stored}(k)\land \neg \exists k'.\ \mathsf{before}(k',k)$
+    $\mathsf{stored}$(k) = false;
+    ret = $\mathsf{arg}$(k);
+  }
+ }
+ return ret;
+}
+\end{lstlisting}
+\end{minipage}
+
+	\caption{The abstract queue implementation $AbsQ$.}
+	\label{fig:signatures}
+\end{figure}
