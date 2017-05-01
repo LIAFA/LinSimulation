@@ -37,13 +37,13 @@ void enq($\mathsf{Values}$ x) {
 $\mathsf{Values}$ deq() {
  if ( * )
   atomic {
-   if ( $\forall k.\ \mathsf{stored}(k)\Rightarrow \mathsf{pending}(k)$ )
-    ret = EMPTY
+   assume $\forall k.\ \mathsf{stored}(k)\Rightarrow \mathsf{pending}(k)$;
+   ret = EMPTY;
   }
  else 
   atomic {
     k = *;
-    assume $\mathsf{stored}(k)\land \neg \exists k'.\ \mathsf{before}(k',k)$
+    assume $\mathsf{stored}(k)\land \neg \exists k'.\ \mathsf{before}(k',k)$;
     $\mathsf{stored}$(k) = false;
     ret = $\mathsf{arg}$(k);
   }
