@@ -17,9 +17,9 @@
 \begin{minipage}[t]{6cm}
 \begin{lstlisting}
 void enq($\mathsf{Values}$ x) {
- k = *; 
- assume $\neg \mathsf{stored}$(k);
  atomic {
+  k = *; 
+  assume $\neg \mathsf{stored}$(k);
   $\mathsf{arg}$(k) = x;
   $\mathsf{pending}$(k) = true;
   $\mathsf{before}$ = $\mathsf{before}\cup\{(k',k)\,|\,\mathsf{stored}(k')\mbox{ and}$
@@ -35,16 +35,18 @@ void enq($\mathsf{Values}$ x) {
 \begin{minipage}[t]{5cm}
 \begin{lstlisting}
 $\mathsf{Values}$ deq() {
- atomic {
-  if ( * and $\forall k.\ \mathsf{stored}(k)\Rightarrow \mathsf{pending}(k)$)
+ if ( * )
+  atomic {
+   if ( $\forall k.\ \mathsf{stored}(k)\Rightarrow \mathsf{pending}(k)$ )
     ret = EMPTY
-  else {
+  }
+ else 
+  atomic {
     k = *;
     assume $\mathsf{stored}(k)\land \neg \exists k'.\ \mathsf{before}(k',k)$
     $\mathsf{stored}$(k) = false;
     ret = $\mathsf{arg}$(k);
   }
- }
  return ret;
 }
 \end{lstlisting}
