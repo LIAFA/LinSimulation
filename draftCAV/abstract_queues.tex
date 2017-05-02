@@ -18,8 +18,7 @@
 \begin{lstlisting}
 void enq($\mathsf{Values}$ x) {
  atomic {
-  k = *; 
-  assume $\neg \mathsf{stored}$(k);
+  k = new;
   $\mathsf{arg}$(k) = x;
   $\mathsf{pending}$(k) = true;
   $\mathsf{before}$ = $\mathsf{before}\cup\{(k',k)\,|\,\mathsf{stored}(k')\mbox{ and}$
