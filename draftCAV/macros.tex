@@ -178,8 +178,8 @@
 
 \lstdefinelanguage{program}{%
   keywords={%
-    var,const,bool,int,true,false,void,atomic,%
-    while,do,if,then,else,assume,assert,proc,call,return,%
+    var,const,bool,int,void,atomic,%
+    while,do,if,then,else,assume,assert,proc,call,return,rule,forall,with,new,choose,skip,%
     task,async,yield,for,wait%
   },
   morecomment=[l]{//},
@@ -190,7 +190,7 @@
 }
 
 \proglangkeyword{%
-  var, const, bool, int, true, false, void, for, atomic,
+  var, const, bool, int, void, for, atomic,rulem
   while[while\ ], do[\ do\ ], if[if\ ], then[\ then\ ], else[\ else\ ],
   assume[assume\ ], return[return\ ], proc, call[call\ ], async, goto
   newThread, newLock, acquire, release, sendMsg[sendMsg\ ]

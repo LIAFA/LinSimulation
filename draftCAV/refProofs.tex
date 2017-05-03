@@ -5,13 +5,13 @@
 Library refinement is the instance of a more general notion of refinement between LTSs
 which for some alphabet $\Gamma$ of \emph{observable actions} is defined as the inclusion of sets of 
 traces projected on $\Gamma$. Library refinement corresponds to the case $\Gamma=C\cup R$. 
-Typically, $\Gamma$-refinement between two LTSs $A$ and $B$ is proved using \emph{simulation relations} which roughly, require that 
-$B$ can mimic every step of $A$ using a (possibly empty) sequence of steps. Mainly, there are two kinds of simulation
+Typically, $\Gamma$-refinement between two LTSs $A_1$ and $A_2$ is proved using \emph{simulation relations} which roughly, require that 
+$A_2$ can mimic every step of $A_1$ using a (possibly empty) sequence of steps. Mainly, there are two kinds of simulation
 relations, forward or backward, depending on whether the preservation of steps is proved starting from a similar state
 forward or backward. It has been shown
 that $\Gamma$-refinement is equivalent to the existence of \emph{backward simulations}, modulo the addition of history variables
 that record events in the implementation, and to the existence of \emph{forward simulations} provided that the right-hand side
-LTS $B$ is $\Gamma$-deterministic~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}. 
+LTS $A_2$ is $\Gamma$-deterministic~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}. 
 We focus on proofs based on forward simulations because they are easier to automatize.
 
 %TODO SAY THAT THE EXTENSION TO $\Gamma$-determinism is new (the previous results were about determinism).
@@ -24,7 +24,7 @@ and implementations that are $\Gamma$-deterministic. For queues and stacks,
 Section~\ref{sec:queues} and Section~\ref{sec:stacks} define other such classes of implementations that cover
 all the implementations that we are aware of.
 
-Let $L_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, s_0^2, \delta_2)$ be two libraries over $\Sigma_1$ and $\Sigma_2$, resp., such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions s.t. $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
+Let $A_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $A_2=(Q_2,\Sigma, s_0^2, \delta_2)$ be two LTSs over $\Sigma_1$ and $\Sigma_2$, respectively, such that $\Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
 
 %Refinement between two libraries $L_1$ and $L_2$  can be proved using  In general, forward simulations are easier to establish, but they are incomplete, i.e., refinement may hold while
 %there exists no forward simulation. On the other hand, proofs based on backward simulations are more difficult, but modulo the
@@ -43,24 +43,25 @@ Let $L_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, s_0^2, \delta_2)$ 
 \vspace{-1.5mm}
 \begin{definition}\label{def:gref}
 %Let $L_1$ and $L_2$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, respectively, such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
-The library $L_1$ \emph{$\Gamma$-refines} $L_2$ if{f} $Tr(L_1) | \Gamma \subseteq Tr(L_2) | \Gamma$.
+The LTS $A_1$ \emph{$\Gamma$-refines} $A_2$ if{f} $Tr(A_1) | \Gamma \subseteq Tr(A_2) | \Gamma$.
 %We say that $L_1$ \emph{refines} $L_2$ when $H(L_1) \subseteq H(L_2)$.
 %for every trace $e \in Tr(L_1)$, there exists a trace $e' \in Tr(L_2)$ such that $e|A\Sigma$ is equivalent to $e'|A\Sigma$.
 \vspace{-1.5mm}
 \end{definition}
 
-Notice that $\Gamma$-refinement implies refinement for any $\Gamma$ as in Definition~\ref{def:gref}.
+The notion of $\Gamma$-refinement instantiated to libraries (i.e., to LTSs defining libraries) implies the notion of refinement in Definition~\ref{def:lib_ref}, for every $\Gamma$ such that $C\cup R \subseteq \Gamma$.
+%, resp., such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions s.t. $C\cup R\subseteq $
+%
+%When $A_1$ and $A_2$ are libraries, $\Gamma$-refinement implies the notion of library refinement  for any $\Gamma$ as in Definition~\ref{def:gref}.
 
-We define a notion of \emph{forward} simulation that can be used to prove $\Gamma$-refinement (a dual notion of \emph{backward} simulation is defined in 
-Appendix~\ref{app:backSim}). 
-%We define a notion of forward simulation that is a sound approximation of refinement and a notion of backward simulation that precisely characterizes refinement. 
+We define a notion of \emph{forward} simulation that can be used to prove $\Gamma$-refinement %We define a notion of forward simulation that is a sound approximation of refinement and a notion of backward simulation that precisely characterizes refinement. 
 For a relation $R\subseteq A\times B$, $R[X]$ is the set of elements related by $R$ to elements of $X$, i.e., $R[X]=\set{y:\exists x\in X.\ R(x,y)}$.
 
 %We can extend the relations between libraries by introducing simulation relations. We will later show that simulation relations imply refinement. 
 \vspace{-1.5mm}
 \begin{definition}
 %Let $L_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, s_0^2, \delta_2)$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, respectively, such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$, and $\Gamma$ a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
-A relation $\mathit{fs} \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$-forward simulation} from $L_1$ to $L_2$ if{f} $\mathit{fs}[s_0^1] = \{s_0^2 \}$ and:
+A relation $\mathit{fs} \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$-forward simulation} from $A_1$ to $A_2$ if{f} $\mathit{fs}[s_0^1] = \{s_0^2 \}$ and:
 \vspace{-1.5mm}
 \begin{itemize}
 \item If $(s,\gamma,s') \in \delta_1$, for some $\gamma\in \Gamma$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_i=\gamma$, for some $i$, and $@s_j\in \Sigma_2\setminus\Gamma$, for each $j\neq i$.
@@ -70,14 +71,18 @@ A relation $\mathit{fs} \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$
 \vspace{-3.5mm}
 \end{definition}
 %If $\mathit{fs}[s]$ is a unique state for all $s \in Q_1$ then $\mathit{fs}$ is called a refinement mapping/function. 
-A $\Gamma$-forward simulation requires that every step of $L_1$ corresponds to a sequence of steps of $L_2$. To imply $\Gamma$-refinement, every step of $L_1$ labeled by an observable action $\gamma\in \Gamma$ should be simulated by a sequence of steps of $L_2$ where exactly one transition is labeled by $\gamma$ and all the other transitions are labeled by non-observable actions.
+A $\Gamma$-forward simulation requires that every step of $A_1$ corresponds to a sequence of steps of $A_2$. To imply $\Gamma$-refinement, every step of $A_1$ labeled by an observable action $\gamma\in \Gamma$ should be simulated by a sequence of steps of $A_2$ where exactly one transition is labeled by $\gamma$ and all the other transitions are labeled by non-observable actions.
+The dual notion of \emph{backward} simulation where steps are simulated backwards can be defined in a similar way.
 
-The following shows the soundness and the completeness of $\Gamma$-forward simulations (when $L_2$ is $\Gamma$-deterministic). It is an instantiation of previous results~~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}.
+
+
+
+The following shows the soundness and the completeness of $\Gamma$-forward simulations (when $A_2$ is $\Gamma$-deterministic). It is an instantiation of previous results~~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}.
 
 \vspace{-1.5mm}
 \begin{theorem}\label{th:forSim}
 %Let $L_1$ and $L_2$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, resp., such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
-$L_1$ $\Gamma$-refines $L_2$ when there is a $\Gamma$-forward simulation from $L_1$ to $L_2$. Moreover, if $L_1$ $\Gamma$-refines $L_2$ and $L_2$ is $\Gamma$-deterministic, then there is a $\Gamma$-forward simulation from $L_1$ to $L_2$.
+$A_1$ $\Gamma$-refines $A_2$ when there is a $\Gamma$-forward simulation from $A_1$ to $A_2$. Moreover, if $A_1$ $\Gamma$-refines $A_2$ and $A_2$ is $\Gamma$-deterministic, then there is a $\Gamma$-forward simulation from $A_1$ to $A_2$.
 \vspace{-1.5mm}
 \end{theorem}
 
