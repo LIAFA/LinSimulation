@@ -127,6 +127,7 @@ $\mathsf{Values}$ deq() {
 \end{minipage}
 
 \begin{minipage}[t]{7.5cm}
+\vspace{-3mm}
 \begin{lstlisting}
 rule inv(enq,x,k) = {
   $\mathsf{present}$(k) = true;
@@ -135,6 +136,7 @@ rule inv(enq,x,k) = {
   forall k' with $\mathsf{present}$(k)$\land \neg \mathsf{pending}$(k') do
     $\mathsf{before}$(k',k) = true;
 }
+
 
 rule lin(deq,y,k) = {
   choose a $\in$ {true, false};
@@ -148,7 +150,7 @@ rule lin(deq,y,k) = {
 \end{lstlisting}
 \end{minipage}
 \begin{minipage}[t]{5cm}
-\vspace{-1mm}
+\vspace{-3mm}
 \begin{lstlisting}
 rule ret(enq,k) = {
   $\mathsf{pending}$(k) = false;
@@ -234,7 +236,7 @@ rule ret(deq,y,k) = {
 %    }\hspace{5mm}    
 %      \end{mathpar}
 %  }
- \vspace{-6mm}
+ \vspace{-4mm}
   \caption{The abstract queue implementations $AbsQ$. Each macro rule is executed atomically in one step (indicated by the keyword {\ttfamily \bfseries atomic}).
 %  transition relation of $AbsQ$. We use the following notations: $\ell_i(k)$ denotes the projection of $\ell(k)$ over the $i$-th component, for each $i\in\{1,2\}$, ${\tt COMP}(O)=\{k\in O: \ell_2(k)={\tt COMP}\}$, $\mathit{f}[x\mapsto y]$ is the function $g$ such that $g(z)=f(z)$ for all $z\neq x$ in the domain of $f$, and $g(x)=y$, $min(O)$ is the set of elements of $O$ which are minimal in the order relation $<$, and $<\uparrow k$ denotes the relation $<$ where all the pairs containing $k$ have been removed.
   %\textcolor{red}{Call-Enq must have $d!= \texttt{EMPTY}$ as a premise. Also lin deq returning empty must be changed as before.}
