@@ -4,15 +4,15 @@
 We formalize several abstraction relations between libraries using a simple
 yet universal model of computation, namely labeled transition systems (LTS).
 This model captures shared-memory programs with an arbitrary number of threads,
-abstracting away the details of any particular programming system irrelevant to
+abstracting away the details of any particular programming language irrelevant to
 our development.
 
 A \emph{labeled transition system} (LTS) $A=(Q,\Sigma, s_0, \delta)$ over the 
 possibly-infinite alphabet $\Sigma$ is a possibly-infinite set $Q$ of states with
 initial state $s_0 \in Q$, and a transition relation $\delta \subseteq Q \times @S \times
-Q$. The $i$th symbol of a sequence $@t \in @S^*$ is denoted $@t_i$, and the empty
-sequence is denoted by $\epsilon$.
-An \emph{execution} of $A$ is an alternating sequence of states and transition labels (called also actions)
+Q$. The $i$th symbol of a sequence $@t \in @S^*$ is denoted $@t_i$, and $\epsilon$ denotes the empty
+sequence.
+An \emph{execution} of $A$ is an alternating sequence of states and transition labels (also called actions)
 $\rho = s_0, e_0,s_1\ldots e_{k-1},s_k$ for some $k>0$ such that $\delta(s_i, e_i, s_{i+1})$
 for each $i$ such that $0\leq i<k$. We write $s_i\xrightarrow{e_i\ldots e_{j-1}}_A s_j$ as shorthand for 
 the subsequence $s_i,e_i,...,s_{j-1},e_{j-1},s_j$ of $\rho$, for any $0\leq i\leq j <k$
@@ -30,9 +30,9 @@ is at most one state $s'$ such that $s\xrightarrow{@t'}s'$ and $@t$ is a subsequ
 \subsection{Libraries}
 \vspace{-1.5mm}
 Programs interact with libraries by calling named library \emph{methods}, which
-receive \emph{parameter values} and yield \emph{return values} upon completion.
+receive \emph{arguments} and yield \emph{return values} upon completion.
 We fix arbitrary sets $\<Methods>$ and $\<Vals>$ of method names and
-parameter/return values. 
+argument/return values. 
 %
 %\begin{example}
 %  \label{ex:methods}
@@ -63,7 +63,7 @@ pair call and return actions.
 %We denote the operation identifier of a
 %call/return action $a$ by $\<op>(a)$. Call and return actions $c \in C$ and $r
 %\in R$ are \emph{matching}, written $c \match r$, when $\<op>(c) = \<op>(r)$. 
-We may omit the second field from a call/return action $a$ for methods that have no inputs or return values.
+We may omit the second field from a call/return action for methods that have no arguments or return values.
 %A word $\tau \in @S^*$ over alphabet $@S$, such that $(C \u R) \subseteq @S$, is
 %\emph{well formed} when:
 %\begin{itemize}
@@ -117,8 +117,11 @@ notational convenience, we take $\<Ops>=\<Nats>$ for the rest of the paper.
 
 A \emph{library} is an LTS over alphabet $\Sigma$ such that $C \u R\subseteq \Sigma$. 
 We assume that the traces of a library satisfy standard well-formedness properties, 
-e.g., return actions correspond to previous call actions, which for lack of 
-space are delegated to Appendix~\ref{app:prelim}. An operation $k$ is called \emph{completed} in a trace $\tau$ when
+e.g., return actions correspond to previous call actions.
+Given a standard library description as a set of methods, the LTS represents the executions of its most general client (that calls an arbitrary set of methods with an arbitrary set of threads in an unbounded loop). The states of this LTS consist of the shared state of the library together with the local state of each thread. The transitions correspond to statements in the methods' bodies, or call and return actions.
+%, which for lack of 
+%space are delegated to Appendix~\ref{app:prelim}. 
+An operation $k$ is called \emph{completed} in a trace $\tau$ when
 $ret(m,d,k)$ occurs in $\tau$, for some $m$ and $d$. Otherwise, it is called \emph{pending}.
 
 
@@ -179,7 +182,7 @@ $H(L)$ contains every weakening of a history in $S$.
 Atomic libraries are often considered as specifications for concurrent objects. 
 Libraries can be made atomic by guarding their methods bodies with global lock acquisitions.
 
-A library $L$ is called a \emph{queue implementation} when $\<Methods>=\{enq,deq\}$ ($enq$ is the method that enqueues a value and $deq$ is the method removing a value) and $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$ where {\tt EMPTY} is the value returned by $deq$ when the queue is empty. Similarly, a library $L$ is called a \emph{stack implementation} when $\<Methods>=\{push,pop\}$ and  $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$. For queue and stack implementations, we assume that the same value is never added twice, i.e., for every trace $@t$ of such a library and every two call actions $inv(m,d_1,k_1)$ and $inv(m,d_2,k_2)$ where $m\in \{enq,push\}$ we have that $d_1\neq d_2$. As shown in several works~\cite{conf/tacas/AbdullaHHJR13,DBLP:conf/icalp/BouajjaniEEH15}, this assumption is without loss of generality for libraries that are data independent, i.e., their behaviors are not influenced by the values added to the collection, which is always the case in practice. On a technical note, this assumption is used to define ($\Gamma$-)deterministic abstract implementations of stacks and queues in Section~\ref{sec:queues} and Section~\ref{sec:stacks}.
+A library $L$ is called a \emph{queue implementation} when $\<Methods>=\{enq,deq\}$ ($enq$ is the method that enqueues a value and $deq$ is the method removing a value) and $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$ where {\tt EMPTY} is the value returned by $deq$ when the queue is empty. Similarly, a library $L$ is called a \emph{stack implementation} when $\<Methods>=\{push,pop\}$ and  $\<Vals>=\<Nats>\cup\{{\tt EMPTY}\}$. For queue and stack implementations, we assume that the same value is never added twice, i.e., for every trace $@t$ of such a library and every two call actions $inv(m,d_1,k_1)$ and $inv(m,d_2,k_2)$ where $m\in \{enq,push\}$ we have that $d_1\neq d_2$. As shown in several works~\cite{conf/tacas/AbdullaHHJR13,DBLP:conf/icalp/BouajjaniEEH15}, this assumption is without loss of generality for libraries that are data independent, i.e., their behaviors are not influenced by the values added to the collection. All the queue and stack implementations that we are aware of are data independent. On a technical note, this assumption is used to define ($\Gamma$-)deterministic abstract implementations of stacks and queues in Section~\ref{sec:queues} and Section~\ref{sec:stacks}.
 
 
 %\begin{example}

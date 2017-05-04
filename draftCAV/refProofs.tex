@@ -2,7 +2,7 @@
 \vspace{-3.5mm}
 \section{Refinement Proofs}
 \vspace{-1.5mm}
-Library refinement is the instance of a more general notion of refinement between LTSs
+Library refinement is an instance of a more general notion of refinement between LTSs,
 which for some alphabet $\Gamma$ of \emph{observable actions} is defined as the inclusion of sets of 
 traces projected on $\Gamma$. Library refinement corresponds to the case $\Gamma=C\cup R$. 
 Typically, $\Gamma$-refinement between two LTSs $A_1$ and $A_2$ is proved using \emph{simulation relations} which roughly, require that 
@@ -11,7 +11,7 @@ relations, forward or backward, depending on whether the preservation of steps i
 forward or backward. It has been shown
 that $\Gamma$-refinement is equivalent to the existence of \emph{backward simulations}, modulo the addition of history variables
 that record events in the implementation, and to the existence of \emph{forward simulations} provided that the right-hand side
-LTS $A_2$ is $\Gamma$-deterministic~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}. 
+LTS, $A_2$, is $\Gamma$-deterministic~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}. 
 We focus on proofs based on forward simulations because they are easier to automatize.
 
 %TODO SAY THAT THE EXTENSION TO $\Gamma$-determinism is new (the previous results were about determinism).
@@ -24,7 +24,7 @@ and implementations that are $\Gamma$-deterministic. For queues and stacks,
 Section~\ref{sec:queues} and Section~\ref{sec:stacks} define other such classes of implementations that cover
 all the implementations that we are aware of.
 
-Let $A_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $A_2=(Q_2,\Sigma, s_0^2, \delta_2)$ be two LTSs over $\Sigma_1$ and $\Sigma_2$, respectively, such that $\Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
+Let $A_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $A_2=(Q_2,\Sigma, s_0^2, \delta_2)$ be two LTSs over $\Sigma_1$ and $\Sigma_2$, respectively, and $\Gamma$ an alphabet, such that $\Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
 
 %Refinement between two libraries $L_1$ and $L_2$  can be proved using  In general, forward simulations are easier to establish, but they are incomplete, i.e., refinement may hold while
 %there exists no forward simulation. On the other hand, proofs based on backward simulations are more difficult, but modulo the
@@ -55,7 +55,7 @@ The notion of $\Gamma$-refinement instantiated to libraries (i.e., to LTSs defin
 %When $A_1$ and $A_2$ are libraries, $\Gamma$-refinement implies the notion of library refinement  for any $\Gamma$ as in Definition~\ref{def:gref}.
 
 We define a notion of \emph{forward} simulation that can be used to prove $\Gamma$-refinement %We define a notion of forward simulation that is a sound approximation of refinement and a notion of backward simulation that precisely characterizes refinement. 
-For a relation $R\subseteq A\times B$, $R[X]$ is the set of elements related by $R$ to elements of $X$, i.e., $R[X]=\set{y:\exists x\in X.\ R(x,y)}$.
+%For a relation $R\subseteq A\times B$, $R[X]$ is the set of elements related by $R$ to elements of $X$, i.e., $R[X]=\set{y:\exists x\in X.\ R(x,y)}$.
 
 %We can extend the relations between libraries by introducing simulation relations. We will later show that simulation relations imply refinement. 
 \vspace{-1.5mm}
