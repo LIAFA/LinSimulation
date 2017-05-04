@@ -93,7 +93,7 @@ When the commit points of pop operations are fixed to particular implementation 
 \vspace{-3mm}
 \subsection{Abstract stack implementation}
 \vspace{-1mm}
-We define an abstract stack $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that essentially, similarly to $AbsQ$, maintains the happens-before order of the pushes whose value has not been yet removed. Pops are treated differently since the commit points are not necessarily linearization points, intuitively, a pop can be linearized before its commit. Each pop operation starts by taking a snapshot of the greatest completed push operations in the happens-before order, and continuously tracks the push operations which are overlapping with it. The commit point $com(pop,d,k)$ with $d\neq {\tt EMPTY}$ is enabled only if $d$ was added by one of the push operations in the initial snapshot, or by a push happening earlier when all the values from the initial snapshot have been removed, or by one of the push operations that overlaps with pop $k$. The commit point $com(pop,{\tt EMPTY},k)$ is enabled only if all the values added by push operations ending before $k$ started have been removed. The effect of the commit points is explained below through examples.
+We define an abstract stack $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that essentially, similarly to $AbsQ$, maintains the happens-before order of the pushes whose value has not yet been  removed by a matching pop. Pop operations are treated differently since the commit points are not necessarily linearization points. Intuitively, a pop can be linearized before its commit point. Each pop operation starts by taking a snapshot of the completed push operations which are maximal in the happens-before, more precisely, which don't happen before another completed push operation. Also, the library maintains the set of push operations overlapping with each pop operation. The commit point $com(pop,d,k)$ with $d\neq {\tt EMPTY}$ is enabled if either $d$ was added by one of the push operations in the initial snapshot, or by a push happening earlier when arguments of pushes from the initial snapshot have been removed, or by one of the push operations that overlaps with pop $k$. The commit point $com(pop,{\tt EMPTY},k)$ is enabled if all the values added by push operations happening before $k$ have been removed. The effect of the commit points is explained below through examples.
 \vspace{-.4mm}
 
 \begin{wrapfigure}{l}{6.8cm}
@@ -111,39 +111,34 @@ Figure~\ref{fig:stackSim} pictures two executions of $AbsS$ for two extended his
 The commit point $com(pop,x,3)$ (pictured with a red circle) is enabled because $x$ was added by a push marked as $be(3)$. The effect of the commit point is that push $1$ is removed from the state (the execution on the bottom shows a more complicated case). For the second pop, the commit point $com(pop,y,4)$ is enabled because $y$ was added by a push marked as $ov(4)$. The execution on the bottom shows an example where the marking $be(k)$ for some pop $k$ is updated at commit points. The pushes $3$ and $4$ are marked as $be(5)$ and $be(6)$
 when the pops $5$ and $6$ start. Then, $com(pop,t,5)$ is enabled since $t$ was added by $push(t,4)$ which is marked as $be(5)$. Besides removing $push(t,4)$, the commit point produces a state where a pop committing later, e.g., pop $6$, can remove $y$ which was added by a predecessor of $push(t,4)$ in the happens-before ($y$ could become the top of the stack when $t$ is removed). This history is valid because $push(y,2)$ can be linearized after $push(x,1)$ and $push(z,3)$. Thus, push 2, a predecessor of the push which is removed, is marked as $be(6)$. Push $1$ which is also a predecessor of the removed push is not marked as $be(6)$ because it happens before another push, i.e., push 3, which is already marked as $be(6)$ (the value added by push 3 should be removed before the value added by push 1 could become the top of the stack).
 
-Formally, the states of $AbsS$ are tuples $\tup{O,<,\ell,rv,cp,be,ov}$ where $<$ is a strict partial order over the set $O$ of operation identifiers, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier in $O$ with a value and a pending/completed flag, $rv:\<Ops> ~> \<Vals>$ records the return value of a pending pop fixed at its commit point, $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every push ($A_1, A_2$) or pop operation ($R_1,R_2,R_3$), $be:\<Ops> ~> 2^O$ records the greatest completed push operations before a pop started or happening earlier provided that the values of all the push happening later have been removed, and $ov: \<Ops> ~> 2^O$ records push operations overlapping with a pop.
-%The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsS}.
-All the components are $\emptyset$ in the initial state, and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsS}.
-
-The transition rules which don't correspond to commit point actions are similar to those for $AbsQ$. The rule {\sc com-pop1} for $com(pop,d,k)$ is enabled only if there exists a push $k'$ which added value $d$ and which belongs to $be(k)$ or $ov(k)$. When enabled, the push $k'$ is removed from the set $O$ (and the order $<$) and for every other pop $k_1$ such that $k'$ belongs to $be(k_1)$, $k'$ is replaced in $be(k_1)$ by its predecessors which are followed exclusively by pushes overlapping with $k_1$ (these predecessors become maximal closed pushes once $k'$ is removed). Also, $rv(k)$ is set to $d$. The rule {\sc com-pop1} for $com(pop,{\tt EMPTY},k)$ is enabled only if $be(k)$ is empty (i.e., all the values added by pushes ending before $k$, if any, have been removed). Then, $rv(k)$ is set to ${\tt EMPTY}$.
-
 \begin{figure} [t]
-\vspace{-2mm}
+%\vspace{-2mm}
+\hspace{-15mm}
 \begin{minipage}[t]{7.5cm}
 \scriptsize{
 {	%\centering
 	\begin{align*}
 %		& \mathsf{Operations}, \mathsf{Values} : \mathsf{Sort} \\
 		& \text{\underline{Shared State}} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{present} : \mathsf{Operations} \rightarrow \mathsf{Bool} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{pending} : \mathsf{Operations} \rightarrow \mathsf{Bool} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{before} : \mathsf{Operations} \times \mathsf{Operations} \rightarrow \mathsf{Bool} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{maxAtInvoc} : \mathsf{Operations} \rightarrow 2^\mathsf{Operations} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{overlap} : \mathsf{Operations} \rightarrow 2^\mathsf{Operations} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{present} : \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{pending} : \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{arg} : \<Ops> \rightarrow \mathsf{Values} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{before} : \<Ops> \times \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{maxAtInvoc} : \<Ops> \rightarrow 2^{\<Ops>} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{overlap} : \<Ops> \rightarrow 2^{\<Ops>} \\
 %		& \mathsf{stored}, \mathsf{pending} : \mathsf{Operations} &\mbox{ // the status of an enqueue} \\
 %		& \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} &\mbox{ // the argument of an enqueue} \\
 	\end{align*}
 }}
 \end{minipage}
-\begin{minipage}[t]{7.5cm}
+\begin{minipage}[t]{7.3cm}
 \begin{lstlisting}
-void push($\mathsf{Values}$ x) {
+void push($\<Vals>$ x) {
   atomic rule inv(push,x,k = new);
   atomic rule ret(push,k);
 }
 
-$\mathsf{Values}$ pop() {
+$\<Vals>$ pop() {
   atomic rule inv(pop,k = new);
   atomic rule com(pop,y,k);
   atomic rule ret(pop,y,k);
@@ -152,7 +147,7 @@ $\mathsf{Values}$ pop() {
 \end{minipage}
 
 \vspace{-5mm}
-\begin{minipage}[t]{6.5cm}
+\begin{minipage}[t]{6.2cm}
 \begin{lstlisting}
 rule inv(push,x,k) = {
   $\mathsf{present}$(k) = true;
@@ -174,7 +169,7 @@ rule ret(push,k) = {
 \begin{lstlisting}
 rule inv(pop,k) = {
   forall k1 with $\mathsf{present}$(k1)$\land \neg \mathsf{pending}$(k1)$\land$
-                 $\neg \exists k'.\ \mathsf{present}(k')\land \neg \mathsf{pending}(k')\land$ 
+                 $\neg \exists k'.\ \mathsf{present}(k')\land \neg \mathsf{pending}(k')\,\land$ 
                  $\mathsf{before}$(k1,$k'$) do
     $\mathsf{maxAtInvoc}$(k) = $\mathsf{maxAtInvoc}$(k) $\cup$ $\{$k1$\}$;
   forall k1 with $\mathsf{present}$(k1)$\land \mathsf{pending}$(k1) do
@@ -193,7 +188,7 @@ rule com(pop,y,k) = {
   if ((a || $\forall k'.\ \mathsf{present}(k')$=false) && $\mathsf{maxAtInvoc}$(k)=$\,\emptyset$) 
     y = EMPTY;
   else 
-    choose k1 $\in$ $\mathsf{Operations}$ with $\mathsf{present}$(k1)$\land$ k1$\in\mathsf{maxAtInvoc}$(k)$\cup\,\mathsf{overlap}$(k) do
+    choose k1 $\in\<Ops>$ with $\mathsf{present}$(k1)$\land$ k1$\in\mathsf{maxAtInvoc}$(k)$\cup\,\mathsf{overlap}$(k) do
     $\mathsf{present}$(k1) = false;
     y = $\mathsf{arg}$(k1);
     forall k2 with k1$\in\mathsf{maxAtInvoc}$(k2) do
@@ -289,8 +284,17 @@ rule com(pop,y,k) = {
 \vspace{-5mm}
 \end{figure}
 
-Let $AbsS_0$ be the standard abstract implementation of a stack (where elements are stored in a sequence; push, resp., pop operations add, resp., remove, an element from the beginning of the sequence in one atomic step). For $\<Methods>=\{push,pop\}$, the alphabet of $AbsS_0$ is $C\cup R\cup Lin$.
-The following result states that the library $AbsS$ has exactly the same set of histories as $AbsS_0$ (see Appendix~\ref{app:absImplStack} for a proof).
+The description of $AbsS$ as an abstract state machine is given in Fig.~\ref{fig:transitions:AbsS}. Compared to the queue implementation $AbsQ$, the shared state contains two more functions $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$. For each pop operation $k$, $\mathsf{maxAtInvoc}(k)$ records the set of completed push operations which were maximal in the happens-before (defined by $\mathsf{before}$) when pop $k$ was invoked, or happening earlier provided that the values of all the pushes happening later than one of these maximal ones have been removed. Also, for each pop operation $k$, $\mathsf{overlap}(k)$ contains the push operations overlapping with pop $k$.
+%Formally, the states of $AbsS$ are tuples $\tup{O,<,\ell,rv,cp,be,ov}$ where $<$ is a strict partial order over the set $O$ of operation identifiers, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier in $O$ with a value and a pending/completed flag, $rv:\<Ops> ~> \<Vals>$ records the return value of a pending pop fixed at its commit point, $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every push ($A_1, A_2$) or pop operation ($R_1,R_2,R_3$), $be:\<Ops> ~> 2^O$ records the greatest completed push operations before a pop started or happening earlier provided that the values of all the push happening later have been removed, and $ov: \<Ops> ~> 2^O$ records push operations overlapping with a pop.
+%%The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsS}.
+%All the components are $\emptyset$ in the initial state, and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsS}.
+In the initial state, the domain of every function (predicate) is empty. The push methods are similar to the enqueue methods in $AbsQ$. The only difference is that every newly invoked push operation {\tt k} is added to the set $\mathsf{overlap}(${\tt k1}$)$ for all pop operations {\tt k1} (since {\tt k} overlaps with all the currently pending pops). The rule {\tt inv(pop,k)}, marking the invocation of a pop, sets $\mathsf{maxAtInvoc}(${\tt k}$)$ and $\mathsf{overlap}(${\tt k}$)$ as explained above. The rule {\tt com(pop,y,k)} results in setting the return value {\tt y} to {\tt EMPTY} if the set $\mathsf{maxAtInvoc}(${\tt k}$)$ is empty (otherwise, there would be push operations happening before pop {\tt k} which makes the answer {\tt EMPTY} incorrect). It results in setting the return value to a value $d\neq\,${\tt EMPTY} when $d$ was added by a push {\tt k1} which belongs to $\mathsf{maxAtInvoc}(${\tt k}$)$ or $\mathsf{overlap}(${\tt k}$)$. In this latter case, the rule {\tt com(pop,y,k)} may also update $\mathsf{maxAtInvoc}(${\tt k2}$)$ for other pending pops {\tt k2}. More precisely, whenever $\mathsf{maxAtInvoc}(${\tt k2}$)$ contains the push {\tt k1}, the latter is replaced by the immediate predecessors of {\tt k1} (according to $\mathsf{before}$) that are followed exclusively by pushes overlapping with {\tt k2}.
+%The transition rules which don't correspond to commit point actions are similar to those for $AbsQ$. The rule {\sc com-pop1} for $com(pop,d,k)$ is enabled only if there exists a push $k'$ which added value $d$ and which belongs to $be(k)$ or $ov(k)$. When enabled, the push $k'$ is removed from the set $O$ (and the order $<$) and for every other pop $k_1$ such that $k'$ belongs to $be(k_1)$, $k'$ is replaced in $be(k_1)$ by its predecessors which are followed exclusively by pushes overlapping with $k_1$ (these predecessors become maximal closed pushes once $k'$ is removed). Also, $rv(k)$ is set to $d$. The rule {\sc com-pop1} for $com(pop,{\tt EMPTY},k)$ is enabled only if $be(k)$ is empty (i.e., all the values added by pushes ending before $k$, if any, have been removed). Then, $rv(k)$ is set to ${\tt EMPTY}$.
+
+The abstract state machine in Fig.~\ref{fig:transitions:AbsS} defines an LTS over the alphabet $\Sigma=C\cup R\cup Com(pop)$. As in the case of $AbsQ$, we assume that the transition corresponding to the invocation, resp., the return, of a method, is done atomically with the fist, resp., the last, macro rule in its body. These transitions are labeled as expected with call and return actions (borrowing the operation identifier which occurs as argument of the macro rule), and the transitions corresponding to the rule {\tt com(pop,y,k)} are labeled by $com(pop,d,k)$.
+
+Let $AbsS_0$ be the standard abstract implementation of a stack where elements are stored in a sequence, push and pop operations adding and removing an element from the beginning of the sequence in one atomic step, respectively. For $\<Methods>=\{push,pop\}$, the alphabet of $AbsS_0$ is $C\cup R\cup Lin$.
+The following result states that the library $AbsS$ has exactly the same set of histories as $AbsS_0$.
 
 \vspace{-2mm}
 \begin{theorem}\label{th:absImplStack}

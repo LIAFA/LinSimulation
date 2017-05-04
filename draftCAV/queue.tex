@@ -85,7 +85,7 @@ The linearization point of a dequeue can either remove a minimal enqueue $k$ (w.
 \end{wrapfigure}
 Figure~\ref{fig:queueSim} pictures two executions of $AbsQ$ for two extended histories (that include dequeue linearization points). The state of $AbsQ$ after each action is pictured as a graph below the action. The nodes of this graph represent enqueue operations and the edges happens-before constraints. Each node is labeled by a value (the input of the enqueue) and a flag {\tt PEND} or {\tt COMP} showing whether the operation is pending or completed. For instance, in the case of the first history, the dequeue linearization point $lin(deq,y,3)$ is enabled because the current happens-before contains a \emph{minimal} enqueue operation with input $y$. Note that a linearization point $lin(deq,x,3)$ is also enabled at this state.
 
-For readability, we define $AbsQ$ as an abstract state machine, which is given in Fig.~\ref{fig:transitions:AbsQ}. The shared state of $AbsQ$ consists of several boolean predicates indicating whether the value added by an enqueue has not been removed yet (the predicate $\mathsf{present})$, whether an enqueue is pending (the predicate $\mathsf{pending}$), the happens-before order (the predicate $\mathsf{before}$), and a function giving the value added by an enqueue (the function $\mathsf{arg}$).
+For readability, we define $AbsQ$ as an abstract state machine, which is given in Fig.~\ref{fig:transitions:AbsQ}. The shared state of $AbsQ$ consists of several boolean predicates indicating whether the value added by an enqueue has not been removed yet (the predicate $\mathsf{present})$, whether an enqueue is pending (the predicate $\mathsf{pending}$), the happens-before order (the predicate $\mathsf{before}$), and a function giving the value added by an enqueue (the function $\mathsf{arg}$). In the initial state, the domain of every function (predicate) is empty.
 %the states of $AbsQ$ are tuples $\tup{O,<,\ell,rv,cp}$ where $O\subseteq \<Ops>$ is a set of operation identifiers, $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a pending/completed flag (the flag is used to track the happens-before order), $rv:\<Ops> ~> \<Vals>$ records the return value of a dequeue fixed at its linearization point ($~>$ denotes a partial function), and $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every enqueue ($A_1, A_2$) or dequeue operation ($R_1,R_2,R_3$).
 %All the components are $\emptyset$ in the initial state, and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsQ}. The alphabet of $AbsQ$ contains call/return actions and dequeue linearization points, denoted by $lin(deq,d,k)$. $Lin(deq)$ is the set of all actions $lin(deq,d,k)$.
 %
@@ -96,17 +96,17 @@ The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,
 
 %\begin{figure} [t]
 \begin{figure}[t]
-\hspace{-8mm}
+\hspace{-10mm}
 \begin{minipage}[t]{7.5cm}
 \scriptsize{
 {	%\centering
 	\begin{align*}
 %		& \mathsf{Operations}, \mathsf{Values} : \mathsf{Sort} \\
 		& \text{\underline{Shared State}} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{present} : \mathsf{Operations} \rightarrow \mathsf{Bool} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{pending} : \mathsf{Operations} \rightarrow \mathsf{Bool} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{before} : \mathsf{Operations} \times \mathsf{Operations} \rightarrow \mathsf{Bool} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{present} : \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{pending} : \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{arg} : \<Ops> \rightarrow \<Vals> \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{before} : \<Ops> \times \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
 %		& \mathsf{stored}, \mathsf{pending} : \mathsf{Operations} &\mbox{ // the status of an enqueue} \\
 %		& \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} &\mbox{ // the argument of an enqueue} \\
 	\end{align*}
@@ -114,12 +114,12 @@ The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,
 \end{minipage}
 \begin{minipage}[t]{7.5cm}
 \begin{lstlisting}
-void enq($\mathsf{Values}$ x) {
+void enq($\<Vals>$ x) {
   atomic rule inv(enq,x,k = new);
   atomic rule ret(enq,k);
 }
 
-$\mathsf{Values}$ deq() {
+$\<Vals>$ deq() {
   atomic rule inv(deq,k = new);
   atomic rule lin(deq,y,k);
   atomic rule ret(deq,y,k);
@@ -144,7 +144,7 @@ rule lin(deq,y,k) = {
   if ( $($a$\ \vee\ \forall k'.\ \mathsf{present}(k')$=false$)\ \land\ \forall k'.\ \mathsf{present}(k')\Rightarrow \mathsf{pending}(k')$ ) 
     y = EMPTY;
   else 
-    choose k1 $\in$ $\mathsf{Operations}$ with $\mathsf{present}$(k1)$\land\neg \exists k'.\ \mathsf{present}(k')\land \mathsf{before}(k',$k1$)$;
+    choose k1 $\in$ $\<Ops>$ with $\mathsf{present}$(k1)$\land\neg \exists k'.\ \mathsf{present}(k')\land \mathsf{before}(k',$k1$)$;
     $\mathsf{present}$(k1) = false;
     y = $\mathsf{arg}$(k1);
 }
@@ -275,7 +275,7 @@ A queue implementation $L$ with fixed dequeue linearization points is a $C\cup R
 \vspace{-4.5mm}
 \subsection{A Correctness Proof For Herlihy\&Wing Queue}\label{ssec:HerlihyWing}
 \vspace{-1mm}
-We describe a forward simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. The description of $\mathit{HWQ}$ in Fig.~\ref{fig:HerlihyWing} defines an LTS whose states contain the shared array ${\tt items}$ and the shared counter ${\tt back}$ together with a valuation for the local variables ${\tt i}$, ${\tt x}$, and ${\tt range}$. A transition is either a call or a return action, or a statement in one of the two methods ${\tt enq}$ or ${\tt deq}$. A $\mathit{HWQ}$ state is related by $F_1$ to an $AbsQ$ state where $\mathsf{present}$ is true for all the enqueues whose argument is  stored in the array ${\tt items}$, and all the pending enqueues that have not yet written to the array ${\tt items}$ (and only for these enqueues). The order relation $\mathsf{before}$ between these enqueues is defined as follows:
+We describe a forward simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. The description of $\mathit{HWQ}$ in Fig.~\ref{fig:HerlihyWing} defines an LTS whose states contain the shared array ${\tt items}$ and the shared counter ${\tt back}$ together with a valuation for the local variables ${\tt i}$, ${\tt x}$, and ${\tt range}$, and the control location of each operation. A transition is either a call or a return action, or a statement in one of the two methods ${\tt enq}$ or ${\tt deq}$. A $\mathit{HWQ}$ state is related by $F_1$ to an $AbsQ$ state where $\mathsf{present}$ is true for all the enqueues whose argument is  stored in the array ${\tt items}$, and all the pending enqueues that have not yet written to the array ${\tt items}$ (and only for these enqueues). The order relation $\mathsf{before}$ between these enqueues is defined as follows:
 \vspace{-2mm}
 \begin{itemize}
 	\item[(a)] pending enqueues are maximal, i.e., for every two enqueues $k$ and $k'$ such that $k'$ is pending, we have that $\neg \mathsf{before}(k',k)$, % $k'\not< k$,
