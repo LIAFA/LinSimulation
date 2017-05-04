@@ -3,7 +3,7 @@
 \section{Stacks With Fixed Pop Commit Points}\label{sec:stacks}
 \vspace{-1.5mm}
 While the abstract queue in Section~\ref{sec:queues} can be adapted to stacks (the linearization point $lin(pop,d,k)$ with $d\neq{\tt EMPTY}$ is enabled when $k$ is added by a push which is maximal in the happens-before order stored in the state), it can't simulate (through forward simulations) existing stack implementations like the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short) where the linearization points of the pop operations are not fixed. Exploiting particular properties of the stack semantics, we refine the ideas used in $AbsQ$ and define 
-a new abstract implementation for stacks, denoted as $AbsQ$, which is able to simulate such implementations. Forward simulations to $AbsS$ are complete for proving the correctness of stack implementations provided that the point in time where the return value of a pop operation is determined, called \emph{commit point}, corresponds to a fixed action.
+a new abstract implementation for stacks, denoted as $AbsS$, which is able to simulate such implementations. Forward simulations to $AbsS$ are complete for proving the correctness of stack implementations provided that the point in time where the return value of a pop operation is determined, called \emph{commit point}, corresponds to a fixed action.
 % provided that the point in time where the return value of a pop operation is determined corresponds to a fixed action. To demonstrate the use of this abstract implementation we provide a correctness proof for a simplified version of Time-Stamped Stack that preserves its most complex behaviors.
 
 \vspace{-3.5mm}
@@ -117,85 +117,171 @@ The transition rules which don't correspond to commit point actions are similar 
 
 \begin{figure} [t]
 \vspace{-2mm}
-{\scriptsize
-  \centering
-  \begin{mathpar}
-    \inferrule[call-push]{
-      k\not\in dom(cp) \\ 
-      d\neq {\tt EMPTY} \\
-      \forall k'.\ ov'(k') = ov(k')\cup \{k\}
-    }{
-      O,<,\ell,rv,cp,be,ov 
-      \xrightarrow{inv(push,d,k)} 
-      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1],be,ov'
-    }\hspace{5mm}
+\begin{minipage}[t]{7.5cm}
+\scriptsize{
+{	%\centering
+	\begin{align*}
+%		& \mathsf{Operations}, \mathsf{Values} : \mathsf{Sort} \\
+		& \text{\underline{Shared State}} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{present} : \mathsf{Operations} \rightarrow \mathsf{Bool} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{pending} : \mathsf{Operations} \rightarrow \mathsf{Bool} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{before} : \mathsf{Operations} \times \mathsf{Operations} \rightarrow \mathsf{Bool} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{maxAtInvoc} : \mathsf{Operations} \rightarrow 2^\mathsf{Operations} \\
+		& \text{{\ttfamily \bfseries function}}\ \mathsf{overlap} : \mathsf{Operations} \rightarrow 2^\mathsf{Operations} \\
+%		& \mathsf{stored}, \mathsf{pending} : \mathsf{Operations} &\mbox{ // the status of an enqueue} \\
+%		& \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} &\mbox{ // the argument of an enqueue} \\
+	\end{align*}
+}}
+\end{minipage}
+\begin{minipage}[t]{7.5cm}
+\begin{lstlisting}
+void push($\mathsf{Values}$ x) {
+  atomic rule inv(push,x,k = new);
+  atomic rule ret(push,k);
+}
 
-    \vspace{-1mm}
-    \inferrule[call-pop]{
-      k\not\in dom(cp) %\\ k\not\in dom(cp) \\ k\not\in dom(cp)
-    }{
-      O,<,\ell,rv,cp,be,ov
-      \xrightarrow{inv(pop,k)} 
-      O,<,\ell,rv,cp[k\mapsto R_1],be[k\mapsto maxCo(O)],ov[k\mapsto {\tt PEND}(O)]
-    }\hspace{5mm}
-    
-    \vspace{-1mm}
-    \inferrule[ret-pop]{
-       cp(k) = R_2 \\
-       rv(k)=d  
-    }{
-      O,<,\ell,rv,cp,be,ov
-      \xrightarrow{ret(pop,d,k)}
-      O,<,\ell,rv,cp[k\mapsto R_3],be,ov
-    }\hspace{5mm}
+$\mathsf{Values}$ pop() {
+  atomic rule inv(pop,k = new);
+  atomic rule com(pop,y,k);
+  atomic rule ret(pop,y,k);
+}
+\end{lstlisting}
+\end{minipage}
 
-    \vspace{-1mm}
-    \inferrule[ret-push1]{
-      cp(k) = A_1 \\
-      k \in O \\
-      \ell(k) = (d,{\tt PEND}) 
-    }{
-      O,<,\ell,rv,cp,be,ov
-      \xrightarrow{ret(push,k)}
-      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto A_2],be,ov
-    }\hspace{5mm}
-    \inferrule[ret-push2]{
-      cp(k) = A_1 \\
-      k \not\in O 
-    }{
-      O,<,\ell,rv,cp,be,ov
-      \xrightarrow{ret(push,k)}
-      O,<,\ell,rv,cp[k\mapsto A_2],be,ov
-    }\hspace{5mm}
+\vspace{-5mm}
+\begin{minipage}[t]{6.5cm}
+\begin{lstlisting}
+rule inv(push,x,k) = {
+  $\mathsf{present}$(k) = true;
+  $\mathsf{pending}$(k) = true;
+  $\mathsf{arg}$(k) = x;
+  forall k1 with $\mathsf{present}$(k1)$\land \neg \mathsf{pending}$(k1) do
+    $\mathsf{before}$(k1,k) = true;
+  forall k1 do
+    $\mathsf{overlap}$(k1) = $\mathsf{overlap}$(k1) $\cup$ $\{$k$\}$;
+}
+rule ret(push,k) = {
+  $\mathsf{pending}$(k) = false;
+  return;
+}
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}[t]{5cm}
+%\vspace{-3mm}
+\begin{lstlisting}
+rule inv(pop,k) = {
+  forall k1 with $\mathsf{present}$(k1)$\land \neg \mathsf{pending}$(k1)$\land$
+                 $\neg \exists k'.\ \mathsf{present}(k')\land \neg \mathsf{pending}(k')\land$ 
+                 $\mathsf{before}$(k1,$k'$) do
+    $\mathsf{maxAtInvoc}$(k) = $\mathsf{maxAtInvoc}$(k) $\cup$ $\{$k1$\}$;
+  forall k1 with $\mathsf{present}$(k1)$\land \mathsf{pending}$(k1) do
+    $\mathsf{overlap}$(k) = $\mathsf{overlap}$(k) $\cup$ $\{$k1$\}$;
+}
+rule ret(pop,y,k) = {
+  return y;
+}
+\end{lstlisting}
+\end{minipage}
 
-    \inferrule[com-pop1]{
-       cp(k) = R_1 \\
-       d\neq{\tt EMPTY} \\
-       k'\in be(k)\cup ov(k) \\
-        \ell_1(k')=d \\
-       \forall k_1.\ k'\not\in be(k_1) \Rightarrow be'(k_1)=be(k_1) \\     \\
-       \forall k_1.\ k'\in be(k_1) \Rightarrow be'(k_1)=(be(k_1)\setminus\{k'\})\cup \{k_2: k_2\in pred_{<}(k') \land \forall k_3. (k_2\in pred_{<}(k_3) \land k_3\neq k') => k_3\in ov(k_1)\} \\
-    }{
-      O,<,\ell,rv,cp,be,ov
-      \xrightarrow{com(pop,d,k)} \\
-      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2],be',ov %be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}]
-    }\hspace{5mm}
+\vspace{-4mm}
+\begin{lstlisting}
+rule com(pop,y,k) = {
+  choose a $\in$ {true, false};
+  if ((a || $\forall k'.\ \mathsf{present}(k')$=false) && $\mathsf{maxAtInvoc}$(k)=$\,\emptyset$) 
+    y = EMPTY;
+  else 
+    choose k1 $\in$ $\mathsf{Operations}$ with $\mathsf{present}$(k1)$\land$ k1$\in\mathsf{maxAtInvoc}$(k)$\cup\,\mathsf{overlap}$(k) do
+    $\mathsf{present}$(k1) = false;
+    y = $\mathsf{arg}$(k1);
+    forall k2 with k1$\in\mathsf{maxAtInvoc}$(k2) do
+      $\mathsf{maxAtInvoc}$(k2) = $\mathsf{maxAtInvoc}$(k2)$\setminus\{$k1$\}$;
+      forall k3 with $\mathsf{before_1}$(k3,k1)$\land \forall k'.\ (\mathsf{before_1}($k3$,k')\land k'\neq $k1$)\Rightarrow k'\in \mathsf{overlap}($k2$)$ do
+        $\mathsf{maxAtInvoc}$(k2) = $\mathsf{maxAtInvoc}$(k2)$\cup\{$k3$\}$;
+}
+\end{lstlisting}
+ %\neg\exists k'.\ \mathsf{present}(k')\,=\,$true$\,\land\, \mathsf{before}($k3,$k')\land \mathsf{before}(k',$k1$)$
 
-    %\vspace{-1mm}
-    \inferrule[com-pop2]{
-       cp(k) = R_1 \\
-       be(k)=\emptyset
-    }{
-      O,<,\ell,rv,cp,be,ov
-      \xrightarrow{com(pop,{\tt EMPTY},k)}
-      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto R_2],be,ov
-    }\hspace{5mm}
-
-    
-      \end{mathpar}
-  }
- \vspace{-6mm}
-  \caption{The transition relation of $AbsQ$. We use the following notions: $maxCo(O)$ is the set of greatest operations in $O$ (w.r.t. $<$) which are completed, i.e., $maxCo(O)=\set{k\in O: \ell_2(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_2(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.%\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.}  $f[\forall k.\ k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=expr(k)$,   $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and 
+%{\scriptsize
+%  \centering
+%  \begin{mathpar}
+%    \inferrule[call-push]{
+%      k\not\in dom(cp) \\ 
+%      d\neq {\tt EMPTY} \\
+%      \forall k'.\ ov'(k') = ov(k')\cup \{k\}
+%    }{
+%      O,<,\ell,rv,cp,be,ov 
+%      \xrightarrow{inv(push,d,k)} 
+%      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1],be,ov'
+%    }\hspace{5mm}
+%
+%    \vspace{-1mm}
+%    \inferrule[call-pop]{
+%      k\not\in dom(cp) %\\ k\not\in dom(cp) \\ k\not\in dom(cp)
+%    }{
+%      O,<,\ell,rv,cp,be,ov
+%      \xrightarrow{inv(pop,k)} 
+%      O,<,\ell,rv,cp[k\mapsto R_1],be[k\mapsto maxCo(O)],ov[k\mapsto {\tt PEND}(O)]
+%    }\hspace{5mm}
+%    
+%    \vspace{-1mm}
+%    \inferrule[ret-pop]{
+%       cp(k) = R_2 \\
+%       rv(k)=d  
+%    }{
+%      O,<,\ell,rv,cp,be,ov
+%      \xrightarrow{ret(pop,d,k)}
+%      O,<,\ell,rv,cp[k\mapsto R_3],be,ov
+%    }\hspace{5mm}
+%
+%    \vspace{-1mm}
+%    \inferrule[ret-push1]{
+%      cp(k) = A_1 \\
+%      k \in O \\
+%      \ell(k) = (d,{\tt PEND}) 
+%    }{
+%      O,<,\ell,rv,cp,be,ov
+%      \xrightarrow{ret(push,k)}
+%      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto A_2],be,ov
+%    }\hspace{5mm}
+%    \inferrule[ret-push2]{
+%      cp(k) = A_1 \\
+%      k \not\in O 
+%    }{
+%      O,<,\ell,rv,cp,be,ov
+%      \xrightarrow{ret(push,k)}
+%      O,<,\ell,rv,cp[k\mapsto A_2],be,ov
+%    }\hspace{5mm}
+%
+%    \inferrule[com-pop1]{
+%       cp(k) = R_1 \\
+%       d\neq{\tt EMPTY} \\
+%       k'\in be(k)\cup ov(k) \\
+%        \ell_1(k')=d \\
+%       \forall k_1.\ k'\not\in be(k_1) \Rightarrow be'(k_1)=be(k_1) \\     \\
+%       \forall k_1.\ k'\in be(k_1) \Rightarrow be'(k_1)=(be(k_1)\setminus\{k'\})\cup \{k_2: k_2\in pred_{<}(k') \land \forall k_3. (k_2\in pred_{<}(k_3) \land k_3\neq k') => k_3\in ov(k_1)\} \\
+%    }{
+%      O,<,\ell,rv,cp,be,ov
+%      \xrightarrow{com(pop,d,k)} \\
+%      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2],be',ov %be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}]
+%    }\hspace{5mm}
+%
+%    %\vspace{-1mm}
+%    \inferrule[com-pop2]{
+%       cp(k) = R_1 \\
+%       be(k)=\emptyset
+%    }{
+%      O,<,\ell,rv,cp,be,ov
+%      \xrightarrow{com(pop,{\tt EMPTY},k)}
+%      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto R_2],be,ov
+%    }\hspace{5mm}
+%
+%    
+%      \end{mathpar}
+%  }
+ \vspace{-4mm}
+  \caption{The abstract stack implementation $AbsS$. We use $\mathsf{before_1}$ to denote the immediate successor relation induced by $\mathsf{before}$, i.e., $\mathsf{before}_1(k,k')={\tt true}$ iff $\neg\exists k''.\ \mathsf{present}(k'')\land \mathsf{before}(k,k'')\land \mathsf{before}(k'',k')$.
+%  The transition relation of $AbsQ$. We use the following notions: $maxCo(O)$ is the set of greatest operations in $O$ (w.r.t. $<$) which are completed, i.e., $maxCo(O)=\set{k\in O: \ell_2(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_2(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.%\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.}  $f[\forall k.\ k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=expr(k)$,   $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and 
   }
   \label{fig:transitions:AbsS}
 \vspace{-5mm}
@@ -236,7 +322,7 @@ A stack implementation $L$ with fixed pop linearization points where transition 
 \vspace{-6mm}
 \subsection{A Correctness Proof For Time-Stamped Stack}\label{sec:corr_tss}
 \vspace{-1mm}
-We describe a forward simulation $\mathit{fs}_2$ from $\mathit{TSS}$ to $AbsS$. Except for the constraints on the components $be$ and $ov$ of a $AbsS$ state, it is similar to the simulation $\mathit{fs}_1$ from $\mathit{HWQ}$ to $AbsQ$. Thus, the $AbsS$ states $t=\tup{O,<,\ell,rv,cp,be,ov}$ associated by $\mathit{fs}_2$ to a $\mathit{TSS}$ state $s$ satisfy the following. The set $O$ consists of all the identifiers of pushes in $s$ which didn't added yet a node to {\tt pools} or for which the input is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). A push $k$ is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by $(d,{\tt COMP})$, otherwise. 
+We describe a forward simulation $\mathit{fs}_2$ from $\mathit{TSS}$ to $AbsS$. Except for the constraints on the components $be$ and $ov$ of a $AbsS$ state, it is similar to the simulation $\mathit{fs}_1$ from $\mathit{HWQ}$ to $AbsQ$. Thus, the $AbsS$ states $t=\tup{O,<,\ell,rv,cp,be,ov}$ associated by $\mathit{fs}_2$ to a $\mathit{TSS}$ state $s$ satisfy the following. The set $O$ consists of all the identifiers of pushes in $s$ which haven't added yet a node to {\tt pools} or for which the input is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). A push $k$ is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by $(d,{\tt COMP})$, otherwise. 
 
 To describe the order relation $<$ we consider the following notations: ${\tt ts}_s(k)$, resp., ${\tt TID}_s(k)$, denotes the timestamp of the node created by the push $k$ in state $s$ (the {\tt ts} field of this node), resp., the id of the thread executing $k$. By an abuse of terminology, we call ${\tt ts}_s(k)$ the timestamp of $k$ in state $s$.
 Also, $k \leadsto_s k'$ when intuitively, a traversal of {\tt pools}  would encounter the node created by $k$ before the one created by $k'$. More precisely, $k \leadsto_s k'$ when ${\tt TID}_s(k) < {\tt TID}_s(k')$, or ${\tt TID}_s(k) = {\tt TID}_s(k')$ and the node created by $k'$ is reachable from the one created by $k$ in the list pointed to by ${\tt pools}[{\tt TID}_s(k)]$.
@@ -248,7 +334,7 @@ The components $be$ and $ov$ satisfy the following constraints (their domain is 
 	\item a pop $k$ with ${\tt youngest}\neq {\tt null}$ that reached a node with timestamp $\tau$ (its variable {\tt n} points to this node) overlaps with every push that created a node with a timestamp bigger than $\tau$ and which occurs in {\tt pools} before the node reached by $k$, i.e., ${\tt youngest}_s(k)\neq{\tt null}$, ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, ${\tt n}_s(k_2)\text{\tt ->taken}={\tt false}$, and ${\tt ts}_s(k_2) \geq {\tt ts}_s(k_1)$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
 	\item a pop $k$ with ${\tt youngest}={\tt null}$ overlaps with every push that created a node which occurs in {\tt pools} before the node reached by $k$,
 i.e., ${\tt youngest}_s(k)={\tt null}$, ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, and ${\tt n}_s(k_2)\text{\tt ->taken}={\tt false}$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
-	\item if the variable {\tt youngest} of a pop $k$ points to a node which is not taken, then this node was created by a push in $be(k)\cup ov(k)$ or the node currently reached by $k$ is followed in {\tt pools} by another node which was created by a push in $be(k)\cup ov(k)$, i.e., ${\tt youngest}_s(k)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(k)={\tt n}_s(k_2)$ implies $k_1\in be(k)\cup ov(k)$ or that there exists $k_3\in O$ such that ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, $k_3\in be(k)\cup ov(k)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and TODO $k$ is traversing the last list in the array {\tt pools}, for each $k, k_1,k_2$
+	\item if the variable {\tt youngest} of a pop $k$ points to a node which is not taken, then this node was created by a push in $be(k)\cup ov(k)$ or the node currently reached by $k$ is followed in {\tt pools} by another node which was created by a push in $be(k)\cup ov(k)$, i.e., ${\tt youngest}_s(k)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(k)={\tt n}_s(k_2)$ implies $k_1\in be(k)\cup ov(k)$ or that there exists $k_3\in O$ such that ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, $k_3\in be(k)\cup ov(k)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and $k$ is traversing the last list in the array {\tt pools}, for each $k, k_1,k_2$
 %	
 %	\item every pop overlaps with all pending pushes, i.e., $k_1\in O$ is pending implies $k_1\in ov(k)$ for each $k, k_1$
 %	\item the greatest completed pushes in $<$ are either overlapping with a pop $k$ or they were the greatest completed pushes when $k$ started, i.e., every such push belongs either to $be(k)$ or $ov(k)$ for each $k$

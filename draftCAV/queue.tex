@@ -55,7 +55,7 @@ Assuming that the linearization point corresponds to the assignment of {\tt i}, 
 The dequeue method has a fixed linearization point which corresponds to an execution of {\tt swap} returning a non-null value. This action alone contributes to the effect of that value being removed from the queue. Every concurrent history can be linearized to a sequential history where dequeues occur in the order of their linearization points in the concurrent history.
 This claim is formally proved in Section~\ref{ssec:HerlihyWing}.
 
-Since the linearization points of the enqueues are not fixed, there exists no forward simulation from $\mathit{HWQ}$ to $AbsQ_0$. 
+Since the linearization points of the enqueues are determined by future dequeue invocations, there exists no forward simulation from $\mathit{HWQ}$ to $AbsQ_0$.  
 In the following, we describe the abstract implementation $AbsQ$ for which such a forward simulation does exist.
 
 \vspace{-3.5mm}
@@ -79,7 +79,7 @@ The linearization point of a dequeue can either remove a minimal enqueue $k$ (w.
 %\vspace{2mm}
 %\includegraphics[width=7cm]{fig-queue2.pdf}
 \vspace{-8mm}
-\caption{Simulating queue histories with $AbsQ$. The order between actions is from left to right.}
+\caption{Simulating queue histories with $AbsQ$. An operation is pictured by a line delimited by two circles denoting the call and respectively, the return action. The representation of a dequeue operation includes a red circle that stands for a {\tt swap} returning a non-null value, which is their linearization point.}
 \label{fig:queueSim}
 \vspace{-6mm}
 \end{wrapfigure}
@@ -89,7 +89,8 @@ For readability, we define $AbsQ$ as an abstract state machine, which is given i
 %the states of $AbsQ$ are tuples $\tup{O,<,\ell,rv,cp}$ where $O\subseteq \<Ops>$ is a set of operation identifiers, $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a pending/completed flag (the flag is used to track the happens-before order), $rv:\<Ops> ~> \<Vals>$ records the return value of a dequeue fixed at its linearization point ($~>$ denotes a partial function), and $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every enqueue ($A_1, A_2$) or dequeue operation ($R_1,R_2,R_3$).
 %All the components are $\emptyset$ in the initial state, and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsQ}. The alphabet of $AbsQ$ contains call/return actions and dequeue linearization points, denoted by $lin(deq,d,k)$. $Lin(deq)$ is the set of all actions $lin(deq,d,k)$.
 %
-The enqueue operations consist of two macro rules: the rule {\tt inv(enq,x,k)} orders the invoked operation after all the completed enqueues present in the current state ({\tt k} is a fresh operation identifier associated to the current operation), and the rule {\tt ret(enq,k)} sets $\mathsf{pending}${\tt (k)} to {\tt false}, provided that the operation is still present in the current state. The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,k)} associated to the invocation and respectively, the return action, whose definition is obvious, and the rule {\tt lin(deq,y,k)} corresponding to its linearization point. When a non-empty set of pending enqueues are present, the rule {\tt lin(deq,y,k)} is non-deterministic. It can set the return value {\tt y} either to {\tt EMPTY}, or to a value {\tt d} $\neq$ {\tt EMPTY}, provided that {\tt d} has been added by an enqueue {\tt k} which is minimal in the current happens-before. In the latter case, $\mathsf{present}${\tt (k)} is set to {\tt false} to indicate that {\tt k}'s input has been removed. When there exists at least one completed enqueue whose value has not been removed, the rule {\tt lin(deq,y,k)} sets {\tt y} to the value added by a minimal enqueue (w.r.t. the current happens-before).
+The enqueue operations consist of two macro rules: the rule {\tt inv(enq,x,k)} orders the invoked operation after all the completed enqueues present in the current state ({\tt k} is a fresh operation identifier associated to the current operation), and the rule {\tt ret(enq,k)} sets $\mathsf{pending}${\tt (k)} to {\tt false}. % provided that the operation is still present in the current state. 
+The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,k)} associated to the invocation and respectively, the return action, whose definition is obvious, and the rule {\tt lin(deq,y,k)} corresponding to its linearization point. When a non-empty set of pending enqueues are present, the rule {\tt lin(deq,y,k)} is non-deterministic. It can set the return value {\tt y} either to {\tt EMPTY}, or to a value {\tt d} $\neq$ {\tt EMPTY}, provided that {\tt d} has been added by an enqueue {\tt k1} which is minimal in the current happens-before. In the latter case, $\mathsf{present}${\tt (k1)} is set to {\tt false} to indicate that {\tt k1}'s input has been removed. When there exists at least one completed enqueue whose value has not been removed, the rule {\tt lin(deq,y,k)} sets {\tt y} to the value added by a minimal enqueue (w.r.t. the current happens-before).
 
 %{\sc call-enq} orders the invoked operation after all the completed enqueues in the current state, and the rules {\sc ret-enq1}/{\sc ret-enq2} flip the corresponding flag from {\tt PEND} to {\tt COMP} provided that the operation is still present in the current state. For dequeue operations, {\sc call-deq} only increments the control point and {\sc ret-deq} checks whether the return value is the same as the one fixed at the linearization point. The linearization point rule {\sc lin-deq1} corresponds to the case of a non-empty queue, showing that $lin(deq,d,k)$ is enabled only if $d$ has been added by an enqueue which is minimal in the current happens-before. When enabled, it removes the enqueue adding $d$ from the state. The linearization point rule {\sc lin-deq2} corresponds to the case of dequeue operations linearized with an {\tt EMPTY} return value.
 
@@ -133,19 +134,19 @@ rule inv(enq,x,k) = {
   $\mathsf{present}$(k) = true;
   $\mathsf{pending}$(k) = true;
   $\mathsf{arg}$(k) = x;
-  forall k' with $\mathsf{present}$(k)$\land \neg \mathsf{pending}$(k') do
-    $\mathsf{before}$(k',k) = true;
+  forall k1 with $\mathsf{present}$(k1)$\land \neg \mathsf{pending}$(k1) do
+    $\mathsf{before}$(k1,k) = true;
 }
 
 
 rule lin(deq,y,k) = {
   choose a $\in$ {true, false};
-  if ((a || $\forall k.\ \mathsf{present}(k)$=false) && $\forall k.\ \mathsf{present}(k)\Rightarrow \mathsf{pending}(k)$) 
+  if ( $($a$\ \vee\ \forall k'.\ \mathsf{present}(k')$=false$)\ \land\ \forall k'.\ \mathsf{present}(k')\Rightarrow \mathsf{pending}(k')$ ) 
     y = EMPTY;
   else 
-    choose k $\in$ $\mathsf{Operations}$ with $\mathsf{present}$(k)$\land\neg \exists k'.\ \mathsf{present}(k')\land \mathsf{before}(k',$k$)$;
-    $\mathsf{present}$(k) = false;
-    y = $\mathsf{arg}$(k);
+    choose k1 $\in$ $\mathsf{Operations}$ with $\mathsf{present}$(k1)$\land\neg \exists k'.\ \mathsf{present}(k')\land \mathsf{before}(k',$k1$)$;
+    $\mathsf{present}$(k1) = false;
+    y = $\mathsf{arg}$(k1);
 }
 \end{lstlisting}
 \end{minipage}

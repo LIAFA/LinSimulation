@@ -49,7 +49,7 @@ The LTS $A_1$ \emph{$\Gamma$-refines} $A_2$ if{f} $Tr(A_1) | \Gamma \subseteq Tr
 \vspace{-1.5mm}
 \end{definition}
 
-The notion of $\Gamma$-refinement instantiated to libraries (i.e., to LTSs defining libraries) implies the notion of refinement in Definition~\ref{def:lib_ref}, for every $\Gamma$ such that $C\cup R \subseteq \Gamma$.
+The notion of $\Gamma$-refinement instantiated to libraries (i.e., to LTSs defining libraries) implies the notion of refinement in Definition~\ref{def:lib_ref} for every $\Gamma$ such that $C\cup R \subseteq \Gamma$.
 %, resp., such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions s.t. $C\cup R\subseteq $
 %
 %When $A_1$ and $A_2$ are libraries, $\Gamma$-refinement implies the notion of library refinement  for any $\Gamma$ as in Definition~\ref{def:gref}.
@@ -61,11 +61,11 @@ For a relation $R\subseteq A\times B$, $R[X]$ is the set of elements related by 
 \vspace{-1.5mm}
 \begin{definition}
 %Let $L_1=(Q_1,\Sigma, s_0^1, \delta_1)$ and $L_2=(Q_2,\Sigma, s_0^2, \delta_2)$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, respectively, such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$, and $\Gamma$ a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
-A relation $\mathit{fs} \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$-forward simulation} from $A_1$ to $A_2$ if{f} $\mathit{fs}[s_0^1] = \{s_0^2 \}$ and:
+A relation $F \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$-forward simulation} from $A_1$ to $A_2$ if{f} $F(s_0^1,s_0^2)$ and:
 \vspace{-1.5mm}
 \begin{itemize}
-\item If $(s,\gamma,s') \in \delta_1$, for some $\gamma\in \Gamma$, and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{@s} u'$, $@s_i=\gamma$, for some $i$, and $@s_j\in \Sigma_2\setminus\Gamma$, for each $j\neq i$.
-\item If $(s,e,s') \in \delta_1$, for some $e \in \Sigma_1\setminus \Gamma$ and $u \in \mathit{fs}[s]$, then there exists $u' \in \mathit{fs}[s']$ such that $u \xrightarrow{\sigma} u'$ and $\sigma\in (\Sigma_2\setminus\Gamma)^*$.  
+\item For all $s,s'\in Q_1$, $\gamma\in \Gamma$, and $u\in Q_2$, such that $(s,\gamma,s') \in \delta_1$ and $F(s,u)$, we have that there exists $u'\in Q_2$ such that $F(s',u')$ and $u \xrightarrow{@s} u'$ where $@s_i=\gamma$, for some $i$, and $@s_j\in \Sigma_2\setminus\Gamma$, for all $j\neq i$.
+\item For all $s,s'\in Q_1$, $e \in \Sigma_1\setminus \Gamma$, and $u\in Q_2$, such that $(s,e,s') \in \delta_1$ and $F(s,u)$, we have that there exists $u'\in Q_2$ such that $F(s',u')$ and $u \xrightarrow{\sigma} u'$ where $\sigma\in (\Sigma_2\setminus\Gamma)^*$.  
 %where $a = a_1, a_2, ..., a_n$ such that for all $i \in [1,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. Moreover, $a$ could be the empty sequence.
 \end{itemize}
 \vspace{-3.5mm}
@@ -113,8 +113,8 @@ and every trace $@t\in Tr(L)$ is $Lin$-complete.
 
 Proving the correctness of an implementation $L_1$ of a concurrent object such as a queue or a stack with fixed linearization points
 reduces to proving that $L_1$ is a $(C\cup R\cup Lin)$-refinement of an abstract implementation $L_2$ of the same object where method
-bodies are guarded with a global-lock acquisition. Since the abstract implementation is usually $(C\cup R\cup Lin)$-deterministic,
-by Theorem~\ref{th:forSim}, proving $(C\cup R\cup Lin)$-refinement is equivalent to finding a $(C\cup R\cup Lin)$-forward simulation 
+bodies are guarded with a global-lock acquisition. As a direct consequence of Theorem~\ref{th:forSim}, since the abstract implementation is 
+ $(C\cup R\cup Lin)$-deterministic, proving $(C\cup R\cup Lin)$-refinement is equivalent to finding a $(C\cup R\cup Lin)$-forward simulation 
 from $L_1$ to $L_2$.
 
 Section~\ref{sec:queues} and Section~\ref{sec:stacks} extend this result to queue and stack implementations where the linearization point of the methods 
