@@ -88,8 +88,8 @@ $A_1$ $\Gamma$-refines $A_2$ when there is a $\Gamma$-forward simulation from $A
 
 The linearization of a concurrent history can be also defined in terms of \emph{linearization points}. Informally, a linearization point of 
 an operation in an execution is a point in time where the operation is conceptually effectuated; given the linearization points of 
-each operation, the linearization of a concurrent history is the sequential history which takes operations in order of their linearization points.
-For some libraries, the linearization points correspond to a fixed set of actions. For instance, in the case of atomic libraries  
+each operation, the linearization of a concurrent history is the sequential history which takes operations in the order of their linearization points.
+For some libraries, the linearization points of all the invocations of a method $m$ correspond to the execution of a fixed statement in $m$'s body. For instance, in the case of atomic libraries  
 where method bodies are guarded with a global-lock acquisition, the linearization point of every method invocation corresponds to the execution 
 of the body. When the linearization points are fixed, we assume that the library is an LTS over an alphabet that includes actions 
 $lin(m,d,k)$ with $m\in\<Methods>$, $d\in\<Vals>$ and $k\in \<Ops>$. The action $lin(m,d,k)$ represents the linearization point of the operation $k$ 
