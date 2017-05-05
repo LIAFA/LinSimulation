@@ -11,53 +11,64 @@ a new abstract implementation for stacks, denoted as $AbsS$, which is able to si
 \vspace{-3.5mm}
 \subsection{Pop Methods With Fixed Commit Points}
 \vspace{-1mm}
-\begin{wrapfigure}{l}{5.2cm}
-\vspace{-10.5mm}
-\begin{lstlisting}
+
+We explain the meaning of the commit points on a simplified version of the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short) given in Fig.~\ref{fig:TimeStamped}. This  implementation maintains an array of singly-linked lists, one for each thread, where list nodes contain a data value (field {\tt data}), a timestamp (field {\tt ts}), the next pointer (field {\tt next}), and a boolean flag indicating whether the node represents a value removed from the stack (field {\tt taken}). Initially, each list contains a sentinel dummy node pointing to itself with timestamp $-1$ and the flag {\tt taken} set to {\tt false}.
+
+
+\begin{figure}[t]
+  \begin{minipage}[t]{0.49\linewidth}
+    \begin{lstlisting}
 struct Node{
   int data;
   int ts;
   Node* next;
-  boolean taken;
+  bool taken;
 };
+
+bool CAS(bool data, bool a, bool b);
+
 Node* pools[maxThreads];
 int TS = 0;
 
 void push(int x) {
-  Node* n = new Node(x,MAX_INT,
-                        null,false);
+  Node* n =
+    new Node(x,MAX_INT, null,false);
   n->next = pools[myTID];
   pools[myTID] = n;
   int i = TS++;
   n->ts = i;
 }
+    \end{lstlisting}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.49\linewidth}
+    \begin{lstlisting}
 int pop() {
- boolean success = false;
- int maxTS = -1;
- Node* youngest = null;
- while ( !success ) {
-   maxTS = -1; youngest = null;
-   for(int i=0; i<maxThreads; i++){
-     Node* n = pools[i];
-     while (n->taken && n->next != n)
-       n = n->next;
-     if(maxTS < n->ts) {
-       maxTS = n->ts; youngest = n;
-     }
-   }
-   if (youngest != null)
-     success=CAS(youngest->taken,
-                       false,true);
- }
- return youngest->data;
+  bool success = false;
+  int maxTS = -1;
+  Node* youngest = null;
+  while ( !success ) {
+    maxTS = -1; youngest = null;
+    for(int i=0; i<maxThreads; i++) {
+      Node* n = pools[i];
+      while (n->taken && n->next != n)
+        n = n->next;
+      if(maxTS < n->ts) {
+        maxTS = n->ts; youngest = n;
+      }
+    }
+    if (youngest != null)
+      success =
+        CAS(youngest->taken, false, true);
+  }
+  return youngest->data;
 }
-\end{lstlisting}
-\vspace{-6mm}
-\caption{Time-Stamped Stack.} %We assume that every statement is atomic.}
-\label{fig:TimeStamped}
-\vspace{-7mm}
-\end{wrapfigure}
-We explain the meaning of the commit points on a simplified version of the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short) given in Fig.~\ref{fig:TimeStamped}. This  implementation maintains an array of singly-linked lists, one for each thread, where list nodes contain a data value (field {\tt data}), a timestamp (field {\tt ts}), the next pointer (field {\tt next}), and a boolean flag indicating whether the node represents a value removed from the stack (field {\tt taken}). Initially, each list contains a sentinel dummy node pointing to itself with timestamp $-1$ and the flag {\tt taken} set to {\tt false}.
+    \end{lstlisting}
+  \end{minipage}
+
+  \caption{The Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15}.}
+  \label{fig:TimeStamped}
+\end{figure}
 
 Pushing a value to the stack proceeds in several steps: adding a node with maximal timestamp in the list associated to the thread executing the push (given by the special variable {\tt myTID}), asking for a new timestamp (given by the shared variable {\tt TS}), and updating the timestamp of the added node. Popping a value from the stack consists in traversing all the lists, finding the first element which doesn't represent a removed value (i.e., {\tt taken} is {\tt false}) in each list, and selecting the element with the maximal timestamp. A compare-and-swap (CAS) is used to set the {\tt taken} flag of this element to {\tt true}. The procedure restarts if the CAS fails.
 
