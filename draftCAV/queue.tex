@@ -113,27 +113,16 @@ The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,
 \begin{figure}[t]
 \hspace{-10mm}
 \begin{minipage}[t]{7.5cm}
-\scriptsize{
-{	%\centering
-	\begin{align*}
-%		& \mathsf{Operations}, \mathsf{Values} : \mathsf{Sort} \\
-		& \text{\underline{Abstract State}} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{present} : \<Ops> \rightarrow \mathbb{B} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{pending} : \<Ops> \rightarrow \mathbb{B} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{arg} : \<Ops> \rightarrow \<Vals> \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{before} : \<Ops> \times \<Ops> \rightarrow \mathbb{B} \\
-%		& \mathsf{stored}, \mathsf{pending} : \mathsf{Operations} &\mbox{ // the status of an enqueue} \\
-%		& \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} &\mbox{ // the argument of an enqueue} \\
-	\end{align*}
-}}
-\end{minipage}
-\begin{minipage}[t]{7.5cm}
 \begin{lstlisting}
 void enq($\<Vals>$ v):
   atomic rule inv(enq,v)
   atomic rule lin(enq,v)
   atomic rule ret(enq,v)
 
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}[t]{7.5cm}
+\begin{lstlisting}
 $\<Vals>$ deq():
   let v with ...
   atomic rule inv(deq,v)
@@ -147,6 +136,11 @@ $\<Vals>$ deq():
 \begin{minipage}[t]{7.5cm}
 \vspace{-3mm}
 \begin{lstlisting}
+function $\mathsf{present}$: $\mathbb{O} \to \mathbb{B}$
+function $\mathsf{pending}$: $\mathbb{O} \to \mathbb{B}$
+function $\mathsf{arg}$: $\mathbb{O} \to \mathbb{V}$
+function $\mathsf{before}$: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
+
 rule inv(enq,v):
   let k = new $\mathbb{O}$
   $\mathsf{present}$(k) := true
