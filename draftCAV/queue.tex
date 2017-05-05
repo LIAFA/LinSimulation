@@ -136,25 +136,25 @@ $\<Vals>$ deq():
 \begin{minipage}[t]{7.5cm}
 \vspace{-3mm}
 \begin{lstlisting}
-function $\mathsf{present}$: $\mathbb{O} \to \mathbb{B}$
-function $\mathsf{pending}$: $\mathbb{O} \to \mathbb{B}$
-function $\mathsf{arg}$: $\mathbb{O} \to \mathbb{V}$
-function $\mathsf{before}$: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
+function present: $\mathbb{O} \to \mathbb{B}$
+function pending: $\mathbb{O} \to \mathbb{B}$
+function arg: $\mathbb{O} \to \mathbb{V}$
+function before: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
 
 rule inv(enq,v):
   let k = new $\mathbb{O}$
-  $\mathsf{present}$(k) := true
-  $\mathsf{pending}$(k) := true
-  $\mathsf{arg}$(k) := v
-  forall k' with $\mathsf{present}$(k')$\land \neg \mathsf{pending}$(k'):
-    $\mathsf{before}$(k',k) := true
+  present(k) := true
+  pending(k) := true
+  arg(k) := v
+  forall k' with present(k')$\land \lnot$pending(k'):
+    before(k',k) := true
 
 rule lin(enq,v):
   pass
 
 rule ret(enq,v):
-  let k with $\mathsf{arg}$(k) = v
-  $\mathsf{pending}$(k) := false
+  let k with arg(k) = v
+  pending(k) := false
 
 \end{lstlisting}
 \end{minipage}
@@ -166,14 +166,14 @@ rule inv(deq,v):
 
 rule lin(deq,v):
   if v = EMPTY:
-    forall k with $\mathsf{present}$(k):
-      assert $\mathsf{pending}$(k)
+    forall k with present(k):
+      assert pending(k)
   else:
-    assert $\mathsf{present}$(k)
-    let k with $\mathsf{arg}$(k) = v
-    forall k' with $\mathsf{present}$(k'):
-      assert $\lnot\mathsf{before}$(k', k)
-    $\mathsf{present}$(k) := false
+    assert present(k)
+    let k with arg(k) = v
+    forall k' with present(k'):
+      assert $\lnot$before(k', k)
+    present(k) := false
 
 rule ret(deq,v):
   pass
