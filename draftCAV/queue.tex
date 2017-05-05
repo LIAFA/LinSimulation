@@ -145,36 +145,42 @@ $\<Vals>$ deq():
 \begin{minipage}[t]{7.5cm}
 \vspace{-3mm}
 \begin{lstlisting}
-rule inv(enq,x,k):
+rule inv(enq,v):
+  let k = new $\mathbb{O}$
   $\mathsf{present}$(k) := true
   $\mathsf{pending}$(k) := true
-  $\mathsf{arg}$(k) := x
-  forall k1 with $\mathsf{present}$(k1)$\land \neg \mathsf{pending}$(k1):
-    $\mathsf{before}$(k1,k) := true
+  $\mathsf{arg}$(k) := v
+  forall k' with $\mathsf{present}$(k')$\land \neg \mathsf{pending}$(k'):
+    $\mathsf{before}$(k',k) := true
 
+rule lin(enq,v):
+  pass
 
-rule lin(deq,y,k):
-  choose a $\in$ $\mathbb{B}$
-  if $($a$\vee\forall k'. \mathsf{present}(k')$=false$) \land \forall k'. \mathsf{present}(k')\Rightarrow \mathsf{pending}(k')$:
-    y := EMPTY
-  else:
-    choose k1 $\in$ $\<Ops>$ with $\mathsf{present}$(k1)$\land\neg \exists k'. \mathsf{present}(k')\land \mathsf{before}(k',$k1$)$
-    $\mathsf{present}$(k1) := false
-    y := $\mathsf{arg}$(k1)
+rule ret(enq,v):
+  let k with $\mathsf{arg}$(k) = v
+  $\mathsf{pending}$(k) := false
 
 \end{lstlisting}
 \end{minipage}
 \begin{minipage}[t]{5cm}
 \vspace{-3mm}
 \begin{lstlisting}
-rule ret(enq,k):
-  $\mathsf{pending}$(k) := false
+rule inv(deq,v):
+  pass
 
-rule inv(deq,k):
-  skip
+rule lin(deq,v):
+  if v = EMPTY:
+    forall k with $\mathsf{present}$(k):
+      assert $\mathsf{pending}$(k)
+  else:
+    assert $\mathsf{present}$(k)
+    let k with $\mathsf{arg}$(k) = v
+    forall k' with $\mathsf{present}$(k'):
+      assert $\lnot\mathsf{before}$(k', k)
+    $\mathsf{present}$(k) := false
 
-rule ret(deq,y,k):
-  return y
+rule ret(deq,v):
+  pass
 
 \end{lstlisting}
 \end{minipage}
