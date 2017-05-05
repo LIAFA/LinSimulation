@@ -6,30 +6,11 @@
 The classical abstract queue implementation, denoted $AbsQ_0$, maintains a
 sequence of enqueued values; dequeues return the oldest non-dequeued value, at
 the time of their linearization points, or {\tt EMPTY}. Some implementations,
-like the queue of \citet{journals/toplas/HerlihyW90}, denoted {\sc hwq}, are not
-forward-simulated by $AbsQ_0$, even though they refine $AbsQ_0$, since the order
-in which their enqueues are linearized to form $AbsQ_0$’s sequence is not
-determined until later, when their values are dequeued.
-
-In this section we develop an abstract queue implementation, denoted $AbsQ$,
-which maintains a partial order of enqueues, rather than a linear sequence.
-Since $AbsQ$ does not force refining implementations to eagerly pick among
-linearizations of their enqueues, it forward-simulates many more queue
-implementations. In fact, $AbsQ$ forward-simulates all queue implementations of
-which we are aware that are not forward-simulated by $AbsQ_0$, including {\sc
-hwq}, The Baskets Queue~\cite{DBLP:conf/opodis/HoffmanSS07}, The Linked
-Concurrent Ring Queue ({\sc lcrq})~\cite{DBLP:conf/ppopp/MorrisonA13}, and The
-Time-Stamped Queue~\cite{DBLP:conf/popl/DoddsHK15}.
-
-
-%TODO HOW CAN WE CONVINCE THAT OTHER IMPLEMENTATIONS HAVE THE SAME PROPERTY ?
-\vspace{-3.5mm}
-\subsection{Enqueue Methods With Non-Fixed Linearization Points}
-\vspace{-1mm}
-% describe a queue implementation listed in Figure~\ref{fig:HerlihyWing} and known as the Herlihy \& Wing Queue~\cite{journals/toplas/HerlihyW90} ($\mathit{HWQ}$ for short), where only the dequeue methods have fixed linearization points.
-We describe $\mathit{HWQ}$ where the linearization points of the enqueue methods are not fixed.
-The shared state consists of an array {\tt items} storing the values in the queue and a counter {\tt back} storing the index of the first unused position in {\tt items}. Initially, all the positions in the array are {\tt null} and {\tt back} is 0.
-An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position can't be used by other enqueues) and then, stores the argument {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
+like the queue of \citet{journals/toplas/HerlihyW90}, denoted {\sc hwq} and
+listed in Figure~\ref{fig:HerlihyWing}, are not forward-simulated by $AbsQ_0$,
+even though they refine $AbsQ_0$, since the order in which their enqueues are
+linearized to form $AbsQ_0$’s sequence is not determined until later, when their
+values are dequeued.
 
 \begin{figure}[t]
   \begin{minipage}[b]{0.55\linewidth}
@@ -100,6 +81,26 @@ rule ret(deq,v):
     \label{fig:transitions:AbsQ}
   \end{minipage}
 \end{figure}
+
+In this section we develop an abstract queue implementation, denoted $AbsQ$,
+which maintains a partial order of enqueues, rather than a linear sequence.
+Since $AbsQ$ does not force refining implementations to eagerly pick among
+linearizations of their enqueues, it forward-simulates many more queue
+implementations. In fact, $AbsQ$ forward-simulates all queue implementations of
+which we are aware that are not forward-simulated by $AbsQ_0$, including {\sc
+hwq}, The Baskets Queue~\cite{DBLP:conf/opodis/HoffmanSS07}, The Linked
+Concurrent Ring Queue ({\sc lcrq})~\cite{DBLP:conf/ppopp/MorrisonA13}, and The
+Time-Stamped Queue~\cite{DBLP:conf/popl/DoddsHK15}.
+
+
+%TODO HOW CAN WE CONVINCE THAT OTHER IMPLEMENTATIONS HAVE THE SAME PROPERTY ?
+\vspace{-3.5mm}
+\subsection{Enqueue Methods With Non-Fixed Linearization Points}
+\vspace{-1mm}
+% describe a queue implementation listed in Figure~\ref{fig:HerlihyWing} and known as the Herlihy \& Wing Queue~\cite{journals/toplas/HerlihyW90} ($\mathit{HWQ}$ for short), where only the dequeue methods have fixed linearization points.
+We describe $\mathit{HWQ}$ where the linearization points of the enqueue methods are not fixed.
+The shared state consists of an array {\tt items} storing the values in the queue and a counter {\tt back} storing the index of the first unused position in {\tt items}. Initially, all the positions in the array are {\tt null} and {\tt back} is 0.
+An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position can't be used by other enqueues) and then, stores the argument {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
 
 The linearization points of the enqueues are not fixed, they depend on dequeues executing in the future. Consider the following trace with two concurrent enqueues (${\tt i}(k)$ represents the value of {\tt i} in operation $k$): $inv(enq,x,1)$, $inv(enq,y,2)$, ${\tt i}(1) = \mbox{{\tt bck++}}$, ${\tt i}(2) = \mbox{{\tt bck++}}$, ${\tt items[i(}2{\tt )]} = y$.
 %\vspace{-1.5mm}
