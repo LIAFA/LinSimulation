@@ -109,58 +109,30 @@ The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,
 
 %{\sc call-enq} orders the invoked operation after all the completed enqueues in the current state, and the rules {\sc ret-enq1}/{\sc ret-enq2} flip the corresponding flag from {\tt PEND} to {\tt COMP} provided that the operation is still present in the current state. For dequeue operations, {\sc call-deq} only increments the control point and {\sc ret-deq} checks whether the return value is the same as the one fixed at the linearization point. The linearization point rule {\sc lin-deq1} corresponds to the case of a non-empty queue, showing that $lin(deq,d,k)$ is enabled only if $d$ has been added by an enqueue which is minimal in the current happens-before. When enabled, it removes the enqueue adding $d$ from the state. The linearization point rule {\sc lin-deq2} corresponds to the case of dequeue operations linearized with an {\tt EMPTY} return value.
 
-%\begin{figure} [t]
 \begin{figure}[t]
-\hspace{-10mm}
-\begin{minipage}[t]{7.5cm}
-\begin{lstlisting}
-void enq($\<Vals>$ v):
-  atomic rule inv(enq,v)
-  atomic rule lin(enq,v)
-  atomic rule ret(enq,v)
-
-\end{lstlisting}
-\end{minipage}
-\begin{minipage}[t]{7.5cm}
-\begin{lstlisting}
-$\<Vals>$ deq():
-  let v with ...
-  atomic rule inv(deq,v)
-  atomic rule lin(deq,v)
-  atomic rule ret(deq,v)
-  return v
-
-\end{lstlisting}
-\end{minipage}
-
-\begin{minipage}[t]{7.5cm}
-\vspace{-3mm}
-\begin{lstlisting}
+  \begin{minipage}[t]{0.4\linewidth}
+    \begin{lstlisting}
 function present: $\mathbb{O} \to \mathbb{B}$
 function pending: $\mathbb{O} \to \mathbb{B}$
-function arg: $\mathbb{O} \to \mathbb{V}$
+function arg: $\mathbb{V} \to \mathbb{O}$
 function before: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
 
 rule inv(enq,v):
-  let k = new $\mathbb{O}$
+  let k := new $\mathbb{O}$
   present(k) := true
   pending(k) := true
   arg(k) := v
-  forall k' with present(k')$\land \lnot$pending(k'):
-    before(k',k) := true
+  forall k' with present(k'):
+    if $\lnot$pending(k'):
+      before(k',k) := true
 
 rule lin(enq,v):
   pass
 
 rule ret(enq,v):
-  let k with arg(k) = v
+  let k := arg(k)
   pending(k) := false
 
-\end{lstlisting}
-\end{minipage}
-\begin{minipage}[t]{5cm}
-\vspace{-3mm}
-\begin{lstlisting}
 rule inv(deq,v):
   pass
 
@@ -170,95 +142,17 @@ rule lin(deq,v):
       assert pending(k)
   else:
     assert present(k)
-    let k with arg(k) = v
+    let k := arg(v)
     forall k' with present(k'):
       assert $\lnot$before(k', k)
     present(k) := false
 
 rule ret(deq,v):
   pass
-
-\end{lstlisting}
-\end{minipage}
-%	\caption{The abstract queue implementation $AbsQ$.}
-%	\label{fig:signatures}
-%\end{figure}
-
-
-%{\scriptsize
-%  \centering
-%  \begin{mathpar}
-%    \inferrule[call-enq]{
-%      k\not\in dom(cp) \\
-%      d\neq {\tt EMPTY}
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{inv(enq,d,k)}
-%      %O\cup\{k\},<\cup \{(k',k): \ell_2(k')={\tt COMP}\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto 1]
-%      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1]
-%    }\hspace{5mm}
-%
-%    \inferrule[call-deq]{
-%      k\not\in dom(cp) \\
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{inv(deq,k)}
-%      O,<,\ell,rv,cp[k\mapsto R_1]
-%    }\hspace{5mm}
-%    \inferrule[ret-deq]{
-%       cp(k) = R_2 \\
-%       rv(k)=d
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{ret(deq,d,k)}
-%      O,<,\ell,rv,cp[k\mapsto R_3]
-%    }\hspace{5mm}
-%
-%    \inferrule[ret-enq1]{
-%      cp(k) = A_1 \\
-%      k \in O \\
-%      \ell(k) = (d,{\tt PEND})
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{ret(enq,k)}
-%      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto A_2]
-%    }\hspace{5mm}
-%    \inferrule[ret-enq2]{
-%      cp(k) = A_1 \\
-%      k \not\in O
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{ret(enq,k)}
-%      O,<,\ell,rv,cp[k\mapsto A_2]
-%    }\hspace{5mm}
-%
-%    \inferrule[lin-deq1]{
-%       cp(k) = R_1 \\
-%       d\neq{\tt EMPTY} \\
-%       k'\in min(O) \\
-%       \ell_1(k')=d
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{lin(deq,d,k)}
-%      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2]
-%    }\hspace{5mm}
-%    \inferrule[lin-deq2]{
-%       cp(k) = R_1 \\
-%       \forall o\in O.\ \ell_2(o)={\tt PEND}
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{lin(deq,{\tt EMPTY},k)}
-%      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto R_2]
-%    }\hspace{5mm}
-%      \end{mathpar}
-%  }
- \vspace{-4mm}
-  \caption{The abstract queue implementations $AbsQ$. Each macro rule is executed atomically in one step (indicated by the keyword {\ttfamily \bfseries atomic}).
-%  transition relation of $AbsQ$. We use the following notations: $\ell_i(k)$ denotes the projection of $\ell(k)$ over the $i$-th component, for each $i\in\{1,2\}$, ${\tt COMP}(O)=\{k\in O: \ell_2(k)={\tt COMP}\}$, $\mathit{f}[x\mapsto y]$ is the function $g$ such that $g(z)=f(z)$ for all $z\neq x$ in the domain of $f$, and $g(x)=y$, $min(O)$ is the set of elements of $O$ which are minimal in the order relation $<$, and $<\uparrow k$ denotes the relation $<$ where all the pairs containing $k$ have been removed.
-  %\textcolor{red}{Call-Enq must have $d!= \texttt{EMPTY}$ as a premise. Also lin deq returning empty must be changed as before.}
-  }
-  \label{fig:transitions:AbsQ}
-\vspace{-6mm}
+    \end{lstlisting}
+    \caption{The $AbsQ$ implementation.}
+    \label{fig:transitions:AbsQ}
+  \end{minipage}
 \end{figure}
 
 % Let $AbsQ_0$ denote this implementation (formally defined in Appendix~\ref{app:absImplQueue}).
