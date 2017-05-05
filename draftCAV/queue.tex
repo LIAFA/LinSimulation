@@ -129,15 +129,17 @@ The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,
 \end{minipage}
 \begin{minipage}[t]{7.5cm}
 \begin{lstlisting}
-void enq($\<Vals>$ x):
-  atomic rule inv(enq,x,k = new)
-  atomic rule ret(enq,k)
-
+void enq($\<Vals>$ v):
+  atomic rule inv(enq,v)
+  atomic rule lin(enq,v)
+  atomic rule ret(enq,v)
 
 $\<Vals>$ deq():
-  atomic rule inv(deq,k = new)
-  atomic rule lin(deq,y,k)
-  atomic rule ret(deq,y,k)
+  let v with ...
+  atomic rule inv(deq,v)
+  atomic rule lin(deq,v)
+  atomic rule ret(deq,v)
+  return v
 
 \end{lstlisting}
 \end{minipage}
