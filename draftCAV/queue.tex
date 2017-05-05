@@ -42,45 +42,43 @@ int deq() {
   \hfill
   \begin{minipage}[b]{0.38\linewidth}
     \begin{lstlisting}
-function present: $\mathbb{O} \to \mathbb{B}$
-function pending: $\mathbb{O} \to \mathbb{B}$
-function arg: $\mathbb{V} \to \mathbb{O}$
+function loc: $\mathbb{O} \to \set{\tt inv, lin, ret, \bot}$
+function arg, ret: $\mathbb{O} \to \mathbb{V}$
+function present, pending: $\mathbb{O} \to \mathbb{B}$
 function before: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
 
-rule inv(enq,v):
-  let k := new $\mathbb{O}$
+rule inv(enq,v,k):
+  arg(k) := v
   present(k) := true
   pending(k) := true
-  arg(v) := k
-  forall k' with present(k'):
-    if $\lnot$pending(k'):
-      before(k',k) := true
+  forall k1 with present(k1):
+    if $\lnot$pending(k1):
+      before(k1,k) := true
 
-rule lin(enq,v):
-  pass
-
-rule ret(enq,v):
-  let k := arg(v)
+rule ret(enq,k):
   pending(k) := false
 
-rule inv(deq,v):
+rule inv(deq,k):
   pass
 
-rule lin(deq,v):
+rule lin(deq,v,k):
+  ret(k) := v
   if v = EMPTY:
-    forall k with present(k):
-      assert pending(k)
-  else:
-    let k := arg(v)
-    assert present(k)
     forall k' with present(k'):
-      assert $\lnot$before(k', k)
-    present(k) := false
+      assert pending(k')
+  else:
+    let k1 = arg$^{-1}$(v)
+    assert present(k1)
+    forall k2 with present(k2):
+      assert $\lnot$before(k2,k1)
+    present(k1) := false
 
-rule ret(deq,v):
-  pass
+rule ret(deq,v,k):
+  assert ret(k) = v
     \end{lstlisting}
-    \caption{The $AbsQ$ implementation.}
+    \caption{The $AbsQ$ implementation; each rule \lstinline|$\alpha$(\_,k)|
+    implicitly begins with \lstinline|assert loc(k)=$\alpha$| and ends with
+    the appropriate \lstinline|loc(k):=$\beta$|.}
     \label{fig:transitions:AbsQ}
   \end{minipage}
 \end{figure}
