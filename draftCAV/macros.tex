@@ -136,7 +136,7 @@
     {\mbox{\normalfont\scriptsize\ensuremath{#1}}}%
     {\mbox{\normalfont\tiny\ensuremath{#1}}}}}
 
-\reservestyle{\semanticdomain}{\semanticdomainstyle} 
+\reservestyle{\semanticdomain}{\semanticdomainstyle}
 
 \newcommand{\proglangkeywordstyle}[1]{\ensuremath{\mathbf{#1}}\xspace}
 \reservestyle{\proglangkeyword}{\proglangkeywordstyle}
@@ -168,7 +168,7 @@
   Vars, Ids[IDs],
   Frames, Stmts, Tasks, Configs, MsgQueues, Locks,
 }
-  
+
 \lstdefinelanguage{bpl}{%
   keywords={%
     procedure,var,int,while,assume,assert,true,false,call,return,newLock,acquire,release,
@@ -178,6 +178,7 @@
 
 \lstdefinelanguage{program}{%
   keywords={%
+    let,pass,function,%
 <<<<<<< HEAD
     var,const,bool,int,void,atomic,%
     while,do,if,then,else,assume,assert,proc,call,return,rule,forall,with,new,choose,skip,%
