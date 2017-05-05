@@ -109,58 +109,30 @@ The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,
 
 %{\sc call-enq} orders the invoked operation after all the completed enqueues in the current state, and the rules {\sc ret-enq1}/{\sc ret-enq2} flip the corresponding flag from {\tt PEND} to {\tt COMP} provided that the operation is still present in the current state. For dequeue operations, {\sc call-deq} only increments the control point and {\sc ret-deq} checks whether the return value is the same as the one fixed at the linearization point. The linearization point rule {\sc lin-deq1} corresponds to the case of a non-empty queue, showing that $lin(deq,d,k)$ is enabled only if $d$ has been added by an enqueue which is minimal in the current happens-before. When enabled, it removes the enqueue adding $d$ from the state. The linearization point rule {\sc lin-deq2} corresponds to the case of dequeue operations linearized with an {\tt EMPTY} return value.
 
-%\begin{figure} [t]
 \begin{figure}[t]
-\hspace{-10mm}
-\begin{minipage}[t]{7.5cm}
-\begin{lstlisting}
-void enq($\<Vals>$ v):
-  atomic rule inv(enq,v)
-  atomic rule lin(enq,v)
-  atomic rule ret(enq,v)
-
-\end{lstlisting}
-\end{minipage}
-\begin{minipage}[t]{7.5cm}
-\begin{lstlisting}
-$\<Vals>$ deq():
-  let v with ...
-  atomic rule inv(deq,v)
-  atomic rule lin(deq,v)
-  atomic rule ret(deq,v)
-  return v
-
-\end{lstlisting}
-\end{minipage}
-
-\begin{minipage}[t]{7.5cm}
-\vspace{-3mm}
-\begin{lstlisting}
+  \begin{minipage}[t]{0.4\linewidth}
+    \begin{lstlisting}
 function present: $\mathbb{O} \to \mathbb{B}$
 function pending: $\mathbb{O} \to \mathbb{B}$
-function arg: $\mathbb{O} \to \mathbb{V}$
+function arg: $\mathbb{V} \to \mathbb{O}$
 function before: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
 
 rule inv(enq,v):
-  let k = new $\mathbb{O}$
+  let k := new $\mathbb{O}$
   present(k) := true
   pending(k) := true
-  arg(k) := v
-  forall k' with present(k')$\land \lnot$pending(k'):
-    before(k',k) := true
+  arg(v) := k
+  forall k' with present(k'):
+    if $\lnot$pending(k'):
+      before(k',k) := true
 
 rule lin(enq,v):
   pass
 
 rule ret(enq,v):
-  let k with arg(k) = v
+  let k := arg(v)
   pending(k) := false
 
-\end{lstlisting}
-\end{minipage}
-\begin{minipage}[t]{5cm}
-\vspace{-3mm}
-\begin{lstlisting}
 rule inv(deq,v):
   pass
 
@@ -169,96 +141,18 @@ rule lin(deq,v):
     forall k with present(k):
       assert pending(k)
   else:
+    let k := arg(v)
     assert present(k)
-    let k with arg(k) = v
     forall k' with present(k'):
       assert $\lnot$before(k', k)
     present(k) := false
 
 rule ret(deq,v):
   pass
-
-\end{lstlisting}
-\end{minipage}
-%	\caption{The abstract queue implementation $AbsQ$.}
-%	\label{fig:signatures}
-%\end{figure}
-
-
-%{\scriptsize
-%  \centering
-%  \begin{mathpar}
-%    \inferrule[call-enq]{
-%      k\not\in dom(cp) \\
-%      d\neq {\tt EMPTY}
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{inv(enq,d,k)}
-%      %O\cup\{k\},<\cup \{(k',k): \ell_2(k')={\tt COMP}\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto 1]
-%      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1]
-%    }\hspace{5mm}
-%
-%    \inferrule[call-deq]{
-%      k\not\in dom(cp) \\
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{inv(deq,k)}
-%      O,<,\ell,rv,cp[k\mapsto R_1]
-%    }\hspace{5mm}
-%    \inferrule[ret-deq]{
-%       cp(k) = R_2 \\
-%       rv(k)=d
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{ret(deq,d,k)}
-%      O,<,\ell,rv,cp[k\mapsto R_3]
-%    }\hspace{5mm}
-%
-%    \inferrule[ret-enq1]{
-%      cp(k) = A_1 \\
-%      k \in O \\
-%      \ell(k) = (d,{\tt PEND})
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{ret(enq,k)}
-%      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto A_2]
-%    }\hspace{5mm}
-%    \inferrule[ret-enq2]{
-%      cp(k) = A_1 \\
-%      k \not\in O
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{ret(enq,k)}
-%      O,<,\ell,rv,cp[k\mapsto A_2]
-%    }\hspace{5mm}
-%
-%    \inferrule[lin-deq1]{
-%       cp(k) = R_1 \\
-%       d\neq{\tt EMPTY} \\
-%       k'\in min(O) \\
-%       \ell_1(k')=d
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{lin(deq,d,k)}
-%      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2]
-%    }\hspace{5mm}
-%    \inferrule[lin-deq2]{
-%       cp(k) = R_1 \\
-%       \forall o\in O.\ \ell_2(o)={\tt PEND}
-%    }{
-%      O,<,\ell,rv,cp
-%      \xrightarrow{lin(deq,{\tt EMPTY},k)}
-%      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto R_2]
-%    }\hspace{5mm}
-%      \end{mathpar}
-%  }
- \vspace{-4mm}
-  \caption{The abstract queue implementations $AbsQ$. Each macro rule is executed atomically in one step (indicated by the keyword {\ttfamily \bfseries atomic}).
-%  transition relation of $AbsQ$. We use the following notations: $\ell_i(k)$ denotes the projection of $\ell(k)$ over the $i$-th component, for each $i\in\{1,2\}$, ${\tt COMP}(O)=\{k\in O: \ell_2(k)={\tt COMP}\}$, $\mathit{f}[x\mapsto y]$ is the function $g$ such that $g(z)=f(z)$ for all $z\neq x$ in the domain of $f$, and $g(x)=y$, $min(O)$ is the set of elements of $O$ which are minimal in the order relation $<$, and $<\uparrow k$ denotes the relation $<$ where all the pairs containing $k$ have been removed.
-  %\textcolor{red}{Call-Enq must have $d!= \texttt{EMPTY}$ as a premise. Also lin deq returning empty must be changed as before.}
-  }
-  \label{fig:transitions:AbsQ}
-\vspace{-6mm}
+    \end{lstlisting}
+    \caption{The $AbsQ$ implementation.}
+    \label{fig:transitions:AbsQ}
+  \end{minipage}
 \end{figure}
 
 % Let $AbsQ_0$ denote this implementation (formally defined in Appendix~\ref{app:absImplQueue}).
@@ -293,15 +187,15 @@ A queue implementation $L$ with fixed dequeue linearization points is a $C\cup R
 We describe a forward simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. The description of $\mathit{HWQ}$ in Fig.~\ref{fig:HerlihyWing} defines an LTS whose states contain the shared array ${\tt items}$ and the shared counter ${\tt back}$ together with a valuation for the local variables ${\tt i}$, ${\tt x}$, and ${\tt range}$, and the control location of each operation. A transition is either a call or a return action, or a statement in one of the two methods ${\tt enq}$ or ${\tt deq}$.
 
 %An enqueue operation in a $\mathit{HWQ}$ state is pending and present if and only if its argument is stored in the array ${\tt items}$ or it has not yet written to the array  ${\tt items}$. Those operations should be $\mathsf{pending}$ and $\mathsf{present}$ in the related $AbsQ$ states. In addition to this, the forward simulation $F_1$ imposes following restrictions:
-An $\mathit{HWQ}$ state $s$ is related by $F_1$ to $AbsQ$ states $t$ where the predicate 
+An $\mathit{HWQ}$ state $s$ is related by $F_1$ to $AbsQ$ states $t$ where the predicate
 $\mathsf{present}$ is true for all the enqueues in $s$ whose argument is stored in the array ${\tt items}$, and all the pending enqueues that have not yet written to the array ${\tt items}$ (and only for these enqueues). We refer to such enqueues in $s$ as $\mathsf{present}$ enqueues. Also, $\mathsf{pending}(k)$ is ${\tt true}$ in $t$ whenever $k$ is a pending enqueue in $s$, $\mathsf{arg}(d)=k$ in $t$ whenever the argument of the enqueue $k$ in $s$ is $d$, and for every dequeue operation $k$ such that ${\tt x}(k)=d\neq {\tt null}$, we have that ${\tt y}(k)=d$ (recall that ${\tt y}$ is a local variable of the dequeue method in $AbsQ$). The order relation $\mathsf{before}$ in $t$ satisfies the following constraints:
 \vspace{-2mm}
 \begin{itemize}
 	\item[(a)] pending enqueues are maximal, i.e., for every two $\mathsf{present}$ enqueues $k$ and $k'$ such that $k'$ is $\mathsf{pending}$, we have that $\neg \mathsf{before}(k',k)$, % $k'\not< k$,
 	\item[(b)] $\mathsf{before}$ is consistent with the order in which positions of ${\tt items}$ have been reserved, i.e., for every two present enqueues $k$ and $k'$ such that ${\tt i}(k) < {\tt i}(k')$, we have that $\neg \mathsf{before}(k',k)$, %$k' \not< k$,
-	\item[(c)] if the position $i$ reserved by an enqueue $k$ has been ``observed'' by a non-linearized dequeue that in the current array traversal may ``observe'' a later position $j$ reserved by another enqueue $k'$, then $k$ can't be ordered before $k'$, 
+	\item[(c)] if the position $i$ reserved by an enqueue $k$ has been ``observed'' by a non-linearized dequeue that in the current array traversal may ``observe'' a later position $j$ reserved by another enqueue $k'$, then $k$ can't be ordered before $k'$,
 %	an enqueue which has reserved a position $i$ %and executed only the first statement
-%	can't be ordered before another enqueue that has reserved a position $j \geq i$ , 
+%	can't be ordered before another enqueue that has reserved a position $j \geq i$ ,
 	i.e., for every two present enqueues $k$ and $k'$, and a dequeue $k_d$, such that
 
 	\vspace{-2mm}
@@ -322,7 +216,7 @@ $\mathsf{present}$ is true for all the enqueues in $s$ whose argument is stored 
 %An enqueue is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by  $(d,{\tt COMP})$, otherwise.
 %The constraint (a) ensures  on $\mathsf{before}$ ensure that: (i) every present and pending enqueue is maximal  and (ii) a present enqueue whose argument is about to be removed by a dequeue operation is minimal.
 %
-%The first point is ensured by the constraint (a). 
+%The first point is ensured by the constraint (a).
 %%Present and pending enqueue identifiers in the $\mathit{HWQ}$ state are $\mathsf{pending}$ in the related $AbsQ$ state and $\mathsf{pending}$ enqueues are maximal in a valid $AbsQ$ state.
 %
 The constraints on $\mathsf{before}$ ensure that a present enqueue whose argument is about to be removed by a dequeue operation is minimal. Thus, let $k'$ be a present enqueue that inserted its argument to ${\tt items}$, and $k_d$ a pending dequeue such that ${\tt canRemove}(k_d, k')$ holds and $k_d$ is just before its swap action at the reserved position of $k'$ i.e., ${\tt i}(k_d) = {\tt i}(k')$. Another pending enqueue $k$ cannot be ordered before $k'$ since pending enqueues are maximal by (a). Regarding the completed and present enqueues $k$, we consider two cases: $i(k) > i(k')$ and $i(k) < i(k')$. For the former case, the constraint (b) ensures $\neg \mathsf{before}(k,k')$ and for the latter case the constraint (c) ensures $\neg \mathsf{before}(k,k')$. Consequently, $k'$ is a minimal element w.r.t. $\mathsf{before}$ just before $k_d$ removes its argument.
