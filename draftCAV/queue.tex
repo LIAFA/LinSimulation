@@ -275,26 +275,29 @@ A queue implementation $L$ with fixed dequeue linearization points is a $C\cup R
 \vspace{-4.5mm}
 \subsection{A Correctness Proof For Herlihy\&Wing Queue}\label{ssec:HerlihyWing}
 \vspace{-1mm}
-We describe a forward simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. The description of $\mathit{HWQ}$ in Fig.~\ref{fig:HerlihyWing} defines an LTS whose states contain the shared array ${\tt items}$ and the shared counter ${\tt back}$ together with a valuation for the local variables ${\tt i}$, ${\tt x}$, and ${\tt range}$, and the control location of each operation. A transition is either a call or a return action, or a statement in one of the two methods ${\tt enq}$ or ${\tt deq}$. A $\mathit{HWQ}$ state is related by $F_1$ to an $AbsQ$ state where $\mathsf{present}$ is true for all the enqueues whose argument is  stored in the array ${\tt items}$, and all the pending enqueues that have not yet written to the array ${\tt items}$ (and only for these enqueues). The order relation $\mathsf{before}$ between these enqueues is defined as follows:
+We describe a forward simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. The description of $\mathit{HWQ}$ in Fig.~\ref{fig:HerlihyWing} defines an LTS whose states contain the shared array ${\tt items}$ and the shared counter ${\tt back}$ together with a valuation for the local variables ${\tt i}$, ${\tt x}$, and ${\tt range}$, and the control location of each operation. A transition is either a call or a return action, or a statement in one of the two methods ${\tt enq}$ or ${\tt deq}$. 
+
+An enqueue operation in a $\mathit{HWQ}$ state is pending and present if and only if its argument is stored in the array ${\tt items}$ or it has not yet written to the array  ${\tt items}$. Those operations should be $\mathsf{pending}$ and $\mathsf{present}$ in the related $AbsQ$ states. In addition to this, the forward simulation $F_1$ imposes following restrictions:
+%A $\mathit{HWQ}$ state is related by $F_1$ to an $AbsQ$ state where $\mathsf{present}$ is true for all the enqueues whose argument is  stored in the array ${\tt items}$, and all the pending enqueues that have not yet written to the array ${\tt items}$ (and only for these enqueues). The order relation $\mathsf{before}$ between these enqueues is defined as follows:
 \vspace{-2mm}
 \begin{itemize}
-	\item[(a)] pending enqueues are maximal, i.e., for every two enqueues $k$ and $k'$ such that $k'$ is pending, we have that $\neg \mathsf{before}(k',k)$, % $k'\not< k$,
-	\item[(b)] $\mathsf{before}$ is consistent with the order in which positions of ${\tt items}$ have been reserved, i.e., for every two enqueues $k$ and $k'$ such that ${\tt i}(k) < {\tt i}(k')$, we have that $\neg \mathsf{before}(k',k)$, %$k' \not< k$,
+	\item[(a)] pending and present enqueues are maximal, i.e., for every two $\mathsf{present}$ enqueues $k$ and $k'$ such that $k'$ is $\mathsf{pending}$, we have that $\neg \mathsf{before}(k',k)$, % $k'\not< k$,
+	\item[(b)] $\mathsf{before}$ is consistent with the order in which positions of ${\tt items}$ have been reserved, i.e., for every two present enqueues $k$ and $k'$ such that ${\tt i}(k) < {\tt i}(k')$, we have that $\neg \mathsf{before}(k',k)$, %$k' \not< k$,
 	\item[(c)] an enqueue which has reserved a position $i$ %and executed only the first statement 
-	can't be ordered before another enqueue that has reserved a position $j \geq i$ when the position $i$ has been ``observed'' by a non-linearized dequeue that may ``observe'' $j$ in the current array traversal, i.e., for every two enqueues $k$ and $k'$, and a dequeue $k_d$, such that 
+	can't be ordered before another enqueue that has reserved a position $j \geq i$ when the position $i$ has been ``observed'' by a non-linearized dequeue that may ``observe'' $j$ in the current array traversal, i.e., for every two present enqueues $k$ and $k'$, and a dequeue $k_d$, such that 
 	
 	\vspace{-2mm}
 	\noindent
 	{\small
 	\begin{align}
 	\hspace{-8mm}
-	{\tt x}(k_d)={\tt null} \land {\tt i}(k') \leq {\tt range}(k_d) \land {\tt i}(k) \leq {\tt i}(k_d) \leq {\tt i}(k')
-	 \land ({\tt i}(k) = {\tt i}(k_d) => k_d\atCP {\tt if}\text{-}{\tt inc}) \label{eq:inst}
+	{\tt canRemove}(k_d,k) \land (i(k') < i(k_d) \lor (i(k')=i(k_d) \land {\tt afterSwapNull}(k_d)))
+\label{eq:inst}
 	\end{align}}
 	
 	\vspace{-6mm}
 	\noindent
-	we have that $\neg \mathsf{before}(k,k')$. The predicate $k_d\atCP {\tt if}\text{-}{\tt inc}$ holds when the dequeue $k_d$ is at a control point after a ${\tt swap}$ returning ${\tt null}$ and before the increment of ${\tt i}$.
+	we have that $\neg \mathsf{before}(k,k')$. The predicate ${\tt canRemove}(k_d,k)$ holds when $k_d$ has currently visited a {\tt null} item in {\tt items} and the present enqueue index $i(k)$ is in the range of $(k_d)$ i.e., $\mathsf{present}(k) \land (x(k_d) = {\tt null} \land i(k) < {\tt range}(k_d) \land i(k_d) < i(k)) \lor (i(k_d) = i(k) \land {\tt beforeSwap}(k_d) \land {\tt items}[i(k)] != {\tt null})$. The predicates ${\tt afterSwapNull}(k_d)$ (resp., ${\tt beforeSwap}(k_d)$) holds when the dequeue $k_d$ is at the control point after a ${\tt swap}$ returning ${\tt null}$ (resp., before a ${\tt swap}$). 
 \vspace{-2mm}
 \end{itemize}
 
@@ -303,22 +306,24 @@ We have that $\mathsf{pending}(k)$ is ${\tt true}$ whenever $k$ is a pending enq
 %An enqueue is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by  $(d,{\tt COMP})$, otherwise. 
 Also, for every dequeue operation $k$ such that ${\tt x}(k)=d\neq {\tt null}$, we have that ${\tt y}(k)=d$ (recall that ${\tt y}$ is a local variable of the dequeue method in $AbsQ$).
 
-TODO I FIXED THE NOTATIONS ONLY UNTIL THIS POINT
+The restrictions of $F_1$ aim to ensure two important points:  (i) identifier of a pending and present enqueue method in the $\mathit{HWQ}$ state should be maximal according to $\mathsf{before}$ predicate in the related $AbsQ$ state and (ii) identifiera of a present enqueue method in $\mathit{HWQ}$ state of which data value is about to be removed by a dequeue operation should be minimal in the related $AbsQ$ state.
 
-We show that $F_1$ is indeed a $C\cup R\cup Lin(deq)$-forward simulation. Let $s$ and $t$ be states of $\mathit{HWQ}$ and $AbsQ$, respectively, such that $(s,t)\in F_1$. 
+The first point is ensured by the restriction (a). Present and pending enqueue identifiers in the $\mathit{HWQ}$ state are $\mathsf{pending}$ in the related $AbsQ$ state and $\mathsf{pending}$ enqueues are maximal in a valid $AbsQ$ state.
+
+Restrictions (b) and (c) ensure the point (ii). Consider a present enqueue $k$ that inserted its argument to ${\tt items}$ and  there exists a pending dequeue $k_d$ such that ${\tt canRemove}(k_d, k)$ and $k_d$ is just before its swap action at the reserved position of $k$ i.e., $i(k_d) = i(k)$. A pending enqueue operation cannot be ordered $\mathsf{before}$ $k$ since pending enqueues are maximal by (a). Regarding the completed and present enqueues $k'$, we consider two cases: $i(k') > i(k)$ and $i(k') < i(k)$. For the former case, the restriction (b) ensures $\neg \mathsf{before}(k',k)$ and for the latter case the restriction (c) ensures $\neg \mathsf{before}(k',k)$. Consequently, $k$ is a minimal element in $\mathsf{before}$ relation just before $k_d$ removes its data value.
+
+Next, we show that $F_1$ is indeed a $C\cup R\cup Lin(deq)$-forward simulation. Let $s$ and $t$ be states of $\mathit{HWQ}$ and $AbsQ$, respectively, such that $(s,t)\in F_1$. 
 We omit discussing the trivial case of transitions labeled by call and return actions which are simulated by similar transitions of $AbsQ$ (for the return a dequeue operation $k$, we use the equality between the local variable ${\tt x}(k)$ in $s$ and the component $rv(k)$ in $t$). 
 %\textcolor{red}{ I think it is good to mention again that call/return actions in HWQ correspond to the same call/return actions in AbsQ (without any other internal action). I also think that invoke enqueue operation is non-trivial. Preservation of the strict partial order and all of the above items a, b and c needs to be rechecked.}
 
 %\setlength{\parskip}{0pt}
-
-
 We show that each internal step of an enqueue or dequeue, except the execution of {\tt swap} returning a non-null value in dequeue (which represents its linearization point), is simulated by an \emph{empty} sequence of $AbsQ$ transitions, i.e., for every state $s'$ obtained through one of these steps, if $(s,t)\in F_1$, then $(s',t)\in F_1$ for each $AbsQ$ state $t$. 
-Essentially, this consists in proving the following property, called \emph{monotonicity}: the set of possible orders $<$ associated by $F_1$ to $s'$ doesn't exclude any order $<$ associated to $s$.
+Essentially, this consists in proving the following property, called \emph{monotonicity}: the set of possible $\mathsf{before}$ relations associated by $F_1$ to $s'$ doesn't exclude any order $\mathsf{before}$ associated to $s$.
 %Essentially, this boils down to showing that the constraints over $<$ in the definition of $\mathit{fs}$ are an invariant for these steps.
 
-Concerning enqueues, let $s'$ be the state obtained from $s$ when a pending enqueue $k$ reserves an array position. This enqueue must be maximal in both $t$ and any state $t'$ related to $s'$ (since it's pending). Moreover, there is no dequeue that can ``observe'' this position before restarting the array traversal. Therefore, item (c) in the definition of $<$ doesn't constrain the order between $k$ and some other enqueue neither in $s$ nor in $s'$. Since this transition doesn't affect the constraints on the order between enqueues different from $k$ (their local variables remain unchanged), monotonicity holds. This property is trivially satisfied by the second step of enqueue which doesn't affect {\tt i}.
+Concerning enqueue rules, let $s'$ be the state obtained from $s$ when a pending enqueue $k$ reserves an array position. This enqueue must be maximal in both $t$ and any state $t'$ related to $s'$ (since it's pending). Moreover, there is no dequeue that can ``observe'' this position before restarting the array traversal. Therefore, item (c) in the definition of $F_1$ doesn't constrain the order between $k$ and some other enqueue neither in $s$ nor in $s'$. Since this transition doesn't affect the constraints on the order between enqueues different from $k$ (their local variables remain unchanged), monotonicity holds. This property is trivially satisfied by the second step of enqueue which doesn't affect {\tt i}.
 
-To prove monotonicity in the case of dequeue internal steps different from its linearization point, it is important to track the non-trivial instantiations of item (c) in the definition of $<$ over the two states $s$ and $s'$, i.e., the triples $(k,k',k_d)$ for which (\ref{eq:inst}) holds. Instantiations that are enabled only in $s'$ may in principle lead to a violation of monotonicity (since they restrict the orders $<$ associated to $s'$). For the two steps that begin an array traversal, i.e., reading the index of the last used position and setting {\tt i} to $0$, there exist no  such new instantiations in $s'$ because the value of {\tt i} is either not set or $0$. % (it is trivial to notice that applying these steps doesn't disable such instantiations that were possible in $s$). 
+To prove monotonicity in the case of dequeue internal steps different from its linearization point, it is important to track the non-trivial instantiations of item (c) in the definition of $\mathsf{before}$ over the two states $s$ and $s'$, i.e., the triples $(k,k',k_d)$ for which (\ref{eq:inst}) holds. Instantiations that are enabled only in $s'$ may in principle lead to a violation of monotonicity (since they restrict the orders $\mathsf{before}$ associated to $s'$). For the two steps that begin an array traversal, i.e., reading the index of the last used position and setting {\tt i} to $0$, there exist no  such new instantiations in $s'$ because the value of {\tt i} is either not set or $0$. % (it is trivial to notice that applying these steps doesn't disable such instantiations that were possible in $s$). 
 %The same holds for the step incrementing the iterator {\tt i}. 
 %
 %The execution of {\tt swap} returning {\tt null} may introduce one new non-trivial instantiation $(k,k',k_d)$ of item (c).
@@ -327,14 +332,17 @@ To prove monotonicity in the case of dequeue internal steps different from its l
 %
 % and ${\tt i}_{s}(k) = {\tt i}_{s'}(k_d)$. The latter constraint guarantees that this instantiation is not enabled in state $s$. The increment of {\tt i} being enabled, implies that 
 %
-The same is true for the increment of {\tt i} in a dequeue $k_d$ since the predicate $k_d\atCP {\tt if}\text{-}{\tt inc}$ holds in state $s$.
-The execution of {\tt swap} returning {\tt null} in a dequeue $k_d$ enables new instantiations $(k,k',k_d)$ in $s'$, thus adding potentially new constraints $k\not< k'$. We show that these instantiations are however vacuous because $k$ must be pending in $s$ and thus maximal in every order $<$ associated by $F_1$ to $s$.
+The same is true for the increment of {\tt i} in a dequeue $k_d$ since the predicate ${\tt afterSwapNull}(k_d)$ holds in state $s$.
+The execution of {\tt swap} returning {\tt null} in a dequeue $k_d$ enables new instantiations $(k,k',k_d)$ in $s'$, thus adding potentially new constraints $\neg \mathsf{before}(k,k')$. We show that these instantiations are however vacuous because $k$ must be pending in $s$ and thus maximal in every order $\mathsf{before}$ associated by $F_1$ to $s$.
 Let $k$ and $k'$ be two enqueues such that together with the dequeue $k_d$ they satisfy the property (\ref{eq:inst}) in $s'$ but not in $s$. 
 We write ${\tt i}_s(k)$ for the value of the variable {\tt i} of operation $k$ in state $s$. 
 We have that ${\tt i}_{s'}(k) = {\tt i}_{s'}(k_d) \leq {\tt i}_{s'}(k')$ and ${\tt items}[{\tt i}_{s'}(k_d)]={\tt null}$. The latter implies that the enqueue $k$ didn't execute
-the second statement (since the position it reserved is still {\tt null}) and it is pending in $s$. The step that checks that the value returned by {\tt swap} is {\tt null} doesn't modify the variables in property  (\ref{eq:inst}) and also, it doesn't change the valuation of the predicate $\atCP {\tt if}\text{-}{\tt inc}$.
+the second statement (since the position it reserved is still {\tt null}) and it is pending in $s'$. The step that swaps the null item does not modify anything except the control point of $k_d$ that makes ${\tt afterSwapNull}(k_d)$ true in $s'$ . Hence, $i_s(k) = i_s(k_d)\leq i_s(k')$ and ${\tt items}[i_s(k_d)] = {\tt null}$ is also true. Therefore, $k$ is pending in $s$ and maximal. Hence, $\mathsf{before}(k,k')$ is not true in both $s$ and $s'$. 
 
-Finally, we show that the linearization point of a dequeue $k$ of $\mathit{HWQ}$, i.e., an execution of {\tt swap} returning a non-null value $d$, from state $s$ and leading to a state $s'$ is simulated by a transition labeled by $lin(deq,d,k)$ of $AbsQ$ from state $t$. By the definition of $\mathit{HWQ}$, there is a unique enqueue $k_e$ which filled the position updated by $k$, i.e., ${\tt i}_s(k_e)=i_s(k)$ and ${\tt x}_{s'}(k)={\tt x}_s(k_e)$. We show that $k_e$ is minimal in the order $<$ of $t$ which implies that $lin(deq,d,k)$ is enabled in $t$. Thus, instantiating item (c) in the definition of $<$ with $k'=k_e$ and $k_d=k$ we get that every enqueue that reserved a position smaller than the one of $k_e$ can't be ordered before $k_e$ in the order $<$. Also, applying item (b) with $k=k_e$ we get the same for every enqueue that reserved a bigger position. An enqueue that didn't reserve a position is by definition maximal in $<$ and therefore, not a predecessor of $k_e$. Then, the state $t'$ obtained from $t$ through a $lin(deq,d,k)$ transition is related to $s'$ because (1) the value added by $k_e$ is not anymore present in {\tt items} which implies that $k_e$ doesn't occur in any $AbsQ$ state related to $s'$, and (2) the value of ${\tt x}(k)$ is set to $d\neq {\tt null}$ which implies that $rv(k)$ is set to $d$ in every $AbsQ$ state related to $s'$.
+Finally, we show that the linearization point of a dequeue $k$ of $\mathit{HWQ}$, i.e., an execution of {\tt swap} returning a non-null value $d$, from state $s$ and leading to a state $s'$ is simulated by a transition labeled by $lin(deq,d,k)$ of $AbsQ$ from state $t$. By the definition of $\mathit{HWQ}$, there is a unique enqueue $k_e$ which filled the position updated by $k$, i.e., ${\tt i}_s(k_e)=i_s(k)$ and ${\tt x}_{s'}(k)={\tt x}_s(k_e)$. 
+
+We show that $k_e$ is minimal in the order $\mathsf{before}$ of $t$ which implies that $k_e$ could be chosen by $lin(deq,d,k)$ step applied on $t$. As explained previously, instantiating item (c) in the definition of $\mathsf{before}$ with $k'=k_e$ and $k_d=k$; and instantiating item (b) with $k=k_e$, we ensures the minimality of $k_e$. Moreover, the state $t'$ obtained from $t$ through a $lin(deq,d,k)$ transition is related to $s'$ because the value added by $k_e$ is not anymore present in {\tt items} and $\mathsf{present}(k_e)$ doesn't hold in $t'$.
+%Thus, instantiating item (c) in the definition of $\mathsf{before}$ with $k'=k_e$ and $k_d=k$ we get that every enqueue that reserved a position smaller than the one of $k_e$ can't be ordered before $k_e$ in the order $\mathsf{before}$. Also, applying item (b) with $k=k_e$ we get the same for every enqueue that reserved a bigger position. An enqueue that didn't reserve a position is by definition maximal in $<$ and therefore, not a predecessor of $k_e$. Then, the state $t'$ obtained from $t$ through a $lin(deq,d,k)$ transition is related to $s'$ because (1) the value added by $k_e$ is not anymore present in {\tt items} which implies that $k_e$ doesn't occur in any $AbsQ$ state related to $s'$, and (2) the value of ${\tt x}(k)$ is set to $d\neq {\tt null}$ which implies that $rv(k)$ is set to $d$ in every $AbsQ$ state related to $s'$.
 %
 %\vfill
 %
