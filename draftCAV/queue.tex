@@ -7,19 +7,19 @@ The classical abstract queue implementation, denoted $AbsQ_0$, maintains a
 sequence of enqueued values; dequeues return the oldest non-dequeued value, at
 the time of their linearization points, or {\tt EMPTY}. Some implementations,
 like the queue of \citet{journals/toplas/HerlihyW90}, denoted {\sc hwq}, are not
-simulated by $AbsQ_0$, even though they refine $AbsQ_0$, since the order in
-which their enqueues are linearized to form $AbsQ_0$’s sequence is not
+forward-simulated by $AbsQ_0$, even though they refine $AbsQ_0$, since the order
+in which their enqueues are linearized to form $AbsQ_0$’s sequence is not
 determined until later, when their values are dequeued.
 
 In this section we develop an abstract queue implementation, denoted $AbsQ$,
 which maintains a partial order of enqueues, rather than a linear sequence.
 Since $AbsQ$ does not force refining implementations to eagerly pick among
-linearizations of their enqueues, it simulates many more queue implementations.
-In fact, $AbsQ$ simulates all queue implementations of which we are aware that
-are not simulated by $AbsQ_0$, including {\sc hwq}, The Baskets
-Queue~\cite{DBLP:conf/opodis/HoffmanSS07}, The Linked Concurrent Ring Queue
-({\sc lcrq})~\cite{DBLP:conf/ppopp/MorrisonA13}, and The Time-Stamped
-Queue~\cite{DBLP:conf/popl/DoddsHK15}.
+linearizations of their enqueues, it forward-simulates many more queue
+implementations. In fact, $AbsQ$ forward-simulates all queue implementations of
+which we are aware that are not forward-simulated by $AbsQ_0$, including {\sc
+hwq}, The Baskets Queue~\cite{DBLP:conf/opodis/HoffmanSS07}, The Linked
+Concurrent Ring Queue ({\sc lcrq})~\cite{DBLP:conf/ppopp/MorrisonA13}, and The
+Time-Stamped Queue~\cite{DBLP:conf/popl/DoddsHK15}.
 
 
 %TODO HOW CAN WE CONVINCE THAT OTHER IMPLEMENTATIONS HAVE THE SAME PROPERTY ?
