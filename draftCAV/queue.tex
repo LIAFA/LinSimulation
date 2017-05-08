@@ -141,29 +141,36 @@ The linearization point of a dequeue can either remove a minimal enqueue $k$ (w.
 
 Fig.~\ref{fig:queueSim} pictures two executions of $AbsQ$ for two extended histories (that include dequeue linearization points). The state of $AbsQ$ after each action is pictured as a graph below the action. The nodes of this graph represent enqueue operations and the edges happens-before constraints. Each node is labeled by a value (the argument of the enqueue) and a flag {\tt PEND} or {\tt COMP} showing whether the operation is pending or completed. For instance, in the case of the first history, the dequeue linearization point $lin(deq,y,3)$ is enabled because the current happens-before contains a \emph{minimal} enqueue operation with argument $y$. Note that a linearization point $lin(deq,x,3)$ is also enabled at this state.
 
-For readability, we define $AbsQ$ as an abstract state machine, which is given in Fig.~\ref{fig:transitions:AbsQ}. The shared state of $AbsQ$ consists of several boolean predicates indicating whether the value added by an enqueue has not been removed yet (the predicate $\mathsf{present})$, whether an enqueue is pending (the predicate $\mathsf{pending}$), the happens-before order (the predicate $\mathsf{before}$), and a function giving the value added by an enqueue (the function $\mathsf{arg}$). In the initial state, the domain of every function (predicate) is empty.
-%the states of $AbsQ$ are tuples $\tup{O,<,\ell,rv,cp}$ where $O\subseteq \<Ops>$ is a set of operation identifiers, $<\subseteq O\times O$ is a strict partial order, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier with a value and a pending/completed flag (the flag is used to track the happens-before order), $rv:\<Ops> ~> \<Vals>$ records the return value of a dequeue fixed at its linearization point ($~>$ denotes a partial function), and $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every enqueue ($A_1, A_2$) or dequeue operation ($R_1,R_2,R_3$).
-%All the components are $\emptyset$ in the initial state, and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsQ}. The alphabet of $AbsQ$ contains call/return actions and dequeue linearization points, denoted by $lin(deq,d,k)$. $Lin(deq)$ is the set of all actions $lin(deq,d,k)$.
-%
-The enqueue operations consist of two macro rules: the rule {\tt inv(enq,x,k)} orders the invoked operation after all the completed enqueues present in the current state ({\tt k} is a fresh operation identifier associated to the current operation), and the rule {\tt ret(enq,k)} sets $\mathsf{pending}${\tt (k)} to {\tt false}. % provided that the operation is still present in the current state.
-The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,k)} associated to the invocation and respectively, the return action, whose definition is obvious, and the rule {\tt lin(deq,y,k)} corresponding to its linearization point. When a non-empty set of pending enqueues are present, the rule {\tt lin(deq,y,k)} is non-deterministic. It can set the return value {\tt y} either to {\tt EMPTY}, or to a value {\tt d} $\neq$ {\tt EMPTY}, provided that {\tt d} has been added by an enqueue {\tt k1} which is minimal in the current happens-before. In the latter case, $\mathsf{present}${\tt (k1)} is set to {\tt false} to indicate that {\tt k1}'s argument has been removed. When there exists at least one completed enqueue whose value has not been removed, the rule {\tt lin(deq,y,k)} sets {\tt y} to the value added by a minimal enqueue (w.r.t. the current happens-before).
+We define $AbsQ$ with the abstract state machine given in
+Figure~\ref{fig:transitions:AbsQ} which defines an LTS over the alphabet $C\cup
+R\cup Lin(deq)$. The state of $AbsQ$ consists of several updatable functions:
+{\tt loc} indicates the abstract control point of a given operation; {\tt arg}
+and {\tt ret} indicate the argument or return value of a given operation,
+respectively; {\tt present} indicates whether a given enqueue operation has yet
+to be removed, and {\tt pending} indicates whether it has yet to complete; {\tt
+before} indicates the happens-before order between operations. Initially, {\tt
+loc(k) = inv} for all {\tt k}, and {\tt present(k1) = pending(k1) =
+before(k1,k2) = false} for all {\tt k1, k2}. Each rule determines the next state
+of $AbsQ$ for the corresponding action. For instance, the {\tt lin(deq,v,k)}
+rule updates the state of $AbsQ$ for the linearization action of a dequeue
+operation with identifier {\tt k} returning value {\tt v}: when {\tt v = EMPTY}
+then $AbsQ$ insists via an assertion that any still-present enqueue must still
+be pending; otherwise, when {\tt v $\neq$ k} then $AbsQ$ insists that a
+corresponding enqueue is present, and that it is minimal in the happens-before
+order, before marking that enqueue as not present. Updates to the {\tt loc}
+function, implicit in Figure~\ref{fig:transitions:AbsQ}, ensure that the
+invocation, linearization-point, and return actions of each operation occur in
+the correct order.
 
-%{\sc call-enq} orders the invoked operation after all the completed enqueues in the current state, and the rules {\sc ret-enq1}/{\sc ret-enq2} flip the corresponding flag from {\tt PEND} to {\tt COMP} provided that the operation is still present in the current state. For dequeue operations, {\sc call-deq} only increments the control point and {\sc ret-deq} checks whether the return value is the same as the one fixed at the linearization point. The linearization point rule {\sc lin-deq1} corresponds to the case of a non-empty queue, showing that $lin(deq,d,k)$ is enabled only if $d$ has been added by an enqueue which is minimal in the current happens-before. When enabled, it removes the enqueue adding $d$ from the state. The linearization point rule {\sc lin-deq2} corresponds to the case of dequeue operations linearized with an {\tt EMPTY} return value.
+The following result states that the library $AbsQ$ has exactly the same set of
+histories as the standard abstract library $AbsQ_0$.
 
+\begin{theorem}
+  \label{th:absImplQueue}
 
-% Let $AbsQ_0$ denote this implementation (formally defined in Appendix~\ref{app:absImplQueue}).
-The following result states that the library $AbsQ$ has exactly the same set of histories as the standard abstract library $AbsQ_0$. % (see Appendix~\ref{app:absImplQueue} for a proof).
+  $AbsQ$ is a refinement of $AbsQ_0$ and vice-versa.
 
-\vspace{-1.5mm}
-\begin{theorem}\label{th:absImplQueue}
-$AbsQ$ is a refinement of $AbsQ_0$ and vice-versa.
-\vspace{-2mm}
 \end{theorem}
-
-The abstract state machine in Fig.~\ref{fig:transitions:AbsQ} defines an LTS over the alphabet $C\cup R\cup Lin(deq)$. The transitions corresponding to the rule {\tt lin(deq,y,k)} are labeled by  actions $lin(deq,y,k)$. Also, we assume that the transition corresponding to the invocation of a method is done atomically with the first step of the same invocation (the macro rule {\tt inv(...)}), and similarly for transitions corresponding to returning from a method, they are done atomically with the last step (the macro rule {\tt ret(...)}). They are labeled as expected with call/return actions (borrowing the operation identifier which occurs as argument of the macro rules). It can be easily proved that this assumption doesn't modify the set of traces projected on $C\cup R\cup Lin(deq)$ (compared to an LTS where these steps are not atomic).
-
-%~\footnote{Without this assumption, while proving forward simulations, a call/return action in the concrete implementation is simulated by two steps of the abstract implementation, the call/return action together with the first/last macro rule.}.
-
 
 A trace of a queue implementation is called \emph{$Lin(deq)$-complete} when every completed dequeue has a linearization point, i.e., each return action $ret(deq,d,k)$ is preceded by an action $lin(deq,d,k)$. A queue implementation $L$ over alphabet $\Sigma$, such that $C\cup R\cup Lin(deq)\subseteq \Sigma$, is called \emph{with fixed dequeue linearization points} when every trace $@t\in Tr(L)$ is $Lin(deq)$-complete.
 
