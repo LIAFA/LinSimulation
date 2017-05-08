@@ -6,10 +6,82 @@
 The classical abstract queue implementation, denoted $AbsQ_0$, maintains a
 sequence of enqueued values; dequeues return the oldest non-dequeued value, at
 the time of their linearization points, or {\tt EMPTY}. Some implementations,
-like the queue of \citet{journals/toplas/HerlihyW90}, denoted {\sc hwq}, are not
-forward-simulated by $AbsQ_0$, even though they refine $AbsQ_0$, since the order
-in which their enqueues are linearized to form $AbsQ_0$’s sequence is not
-determined until later, when their values are dequeued.
+like the queue of \citet{journals/toplas/HerlihyW90}, denoted {\sc hwq} and
+listed in Figure~\ref{fig:HerlihyWing}, are not forward-simulated by $AbsQ_0$,
+even though they refine $AbsQ_0$, since the order in which their enqueues are
+linearized to form $AbsQ_0$’s sequence is not determined until later, when their
+values are dequeued.
+
+\begin{figure}[t]
+  \begin{minipage}[b]{0.55\linewidth}
+    \begin{lstlisting}
+void enq(int x) {
+  i = back++; items[i] = x;
+}
+int deq() {
+  while (1) {
+    range = back - 1;
+    for (int i = 0; i <= range; i++) {
+      x = swap(items[i],null);
+      if (x != null) return x;
+} } }
+    \end{lstlisting}
+    \caption{The Herlihy \& Wing Queue~\cite{journals/toplas/HerlihyW90}.}
+    \label{fig:HerlihyWing}
+
+    \smallskip
+    \hrule
+    \smallskip
+
+    \includegraphics[width=7cm]{fig-queue1}
+    \includegraphics[width=7cm]{fig-queue2}
+    \caption{Forward simulation with $AbsQ$. Lines depict operations,
+    and circles depict call, return, and linearization point actions.}
+    \label{fig:queueSim}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.38\linewidth}
+    \begin{lstlisting}
+function loc: $\mathbb{O} \to \set{\tt inv, lin, ret, \bot}$
+function arg, ret: $\mathbb{O} \to \mathbb{V}$
+function present, pending: $\mathbb{O} \to \mathbb{B}$
+function before: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
+
+rule inv(enq,v,k):
+  arg(k) := v
+  present(k) := true
+  pending(k) := true
+  forall k1 with present(k1):
+    if $\lnot$pending(k1):
+      before(k1,k) := true
+
+rule ret(enq,k):
+  pending(k) := false
+
+rule inv(deq,k):
+  pass
+
+rule lin(deq,v,k):
+  ret(k) := v
+  if v = EMPTY:
+    forall k' with present(k'):
+      assert pending(k')
+  else:
+    let k1 = arg$^{-1}$(v)
+    assert present(k1)
+    forall k2 with present(k2):
+      assert $\lnot$before(k2,k1)
+    present(k1) := false
+
+rule ret(deq,v,k):
+  assert ret(k) = v
+    \end{lstlisting}
+    \caption{The $AbsQ$ implementation; each rule \lstinline|$\alpha$(\_,k)|
+    implicitly begins with \lstinline|assert loc(k)=$\alpha$| and ends with
+    the appropriate \lstinline|loc(k):=$\beta$|.}
+    \label{fig:transitions:AbsQ}
+  \end{minipage}
+\end{figure}
 
 In this section we develop an abstract queue implementation, denoted $AbsQ$,
 which maintains a partial order of enqueues, rather than a linear sequence.
@@ -31,26 +103,6 @@ We describe $\mathit{HWQ}$ where the linearization points of the enqueue methods
 The shared state consists of an array {\tt items} storing the values in the queue and a counter {\tt back} storing the index of the first unused position in {\tt items}. Initially, all the positions in the array are {\tt null} and {\tt back} is 0.
 An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position can't be used by other enqueues) and then, stores the argument {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
 
-\begin{wrapfigure}{l}{5.3cm}
-\vspace{-9mm}
-\begin{lstlisting}
-void enq(int x){
-  i = back++;
-  items[i] = x;
-}
-int deq() {
-  while (1) {
-    range = back - 1;
-    for (int i = 0; i <= range; i++){
-      x = swap(items[i],null);
-      if ( x != null ) return x;
-}}}
-  \end{lstlisting}
-\vspace{-5.5mm}
-\caption{Herlihy \& Wing Queue. We assume that every statement is atomic.}
-\label{fig:HerlihyWing}
-\vspace{-6mm}
-\end{wrapfigure}
 The linearization points of the enqueues are not fixed, they depend on dequeues executing in the future. Consider the following trace with two concurrent enqueues (${\tt i}(k)$ represents the value of {\tt i} in operation $k$): $inv(enq,x,1)$, $inv(enq,y,2)$, ${\tt i}(1) = \mbox{{\tt bck++}}$, ${\tt i}(2) = \mbox{{\tt bck++}}$, ${\tt items[i(}2{\tt )]} = y$.
 %\vspace{-1.5mm}
 %\begin{align*}
@@ -87,17 +139,6 @@ The linearization point of a dequeue can either remove a minimal enqueue $k$ (w.
 %the return value is {\tt EMPTY}, the linearization point of a dequeue is enabled only if the current state stores only pending enqueues (because, the dequeue overlaps with all the enqueue operations stored in the current state and it can be linearized before all of them).
 %The return of a dequeue is enabled only if the returned value matches the one fixed at the linearization point.
 
-\begin{wrapfigure}{l}{7.2cm}
-\vspace{-6mm}
-\includegraphics[width=7.3cm]{fig-queue12.pdf}
-%
-%\vspace{2mm}
-%\includegraphics[width=7cm]{fig-queue2.pdf}
-\vspace{-8mm}
-\caption{Simulating queue histories with $AbsQ$. An operation is pictured by a line delimited by two circles denoting the call and respectively, the return action. The representation of a dequeue operation includes a red circle that stands for a {\tt swap} returning a non-null value, which is their linearization point.}
-\label{fig:queueSim}
-\vspace{-6mm}
-\end{wrapfigure}
 Fig.~\ref{fig:queueSim} pictures two executions of $AbsQ$ for two extended histories (that include dequeue linearization points). The state of $AbsQ$ after each action is pictured as a graph below the action. The nodes of this graph represent enqueue operations and the edges happens-before constraints. Each node is labeled by a value (the argument of the enqueue) and a flag {\tt PEND} or {\tt COMP} showing whether the operation is pending or completed. For instance, in the case of the first history, the dequeue linearization point $lin(deq,y,3)$ is enabled because the current happens-before contains a \emph{minimal} enqueue operation with argument $y$. Note that a linearization point $lin(deq,x,3)$ is also enabled at this state.
 
 For readability, we define $AbsQ$ as an abstract state machine, which is given in Fig.~\ref{fig:transitions:AbsQ}. The shared state of $AbsQ$ consists of several boolean predicates indicating whether the value added by an enqueue has not been removed yet (the predicate $\mathsf{present})$, whether an enqueue is pending (the predicate $\mathsf{pending}$), the happens-before order (the predicate $\mathsf{before}$), and a function giving the value added by an enqueue (the function $\mathsf{arg}$). In the initial state, the domain of every function (predicate) is empty.
@@ -109,51 +150,6 @@ The dequeue operations consist of two rules {\tt inv(deq,k)} and {\tt ret(deq,y,
 
 %{\sc call-enq} orders the invoked operation after all the completed enqueues in the current state, and the rules {\sc ret-enq1}/{\sc ret-enq2} flip the corresponding flag from {\tt PEND} to {\tt COMP} provided that the operation is still present in the current state. For dequeue operations, {\sc call-deq} only increments the control point and {\sc ret-deq} checks whether the return value is the same as the one fixed at the linearization point. The linearization point rule {\sc lin-deq1} corresponds to the case of a non-empty queue, showing that $lin(deq,d,k)$ is enabled only if $d$ has been added by an enqueue which is minimal in the current happens-before. When enabled, it removes the enqueue adding $d$ from the state. The linearization point rule {\sc lin-deq2} corresponds to the case of dequeue operations linearized with an {\tt EMPTY} return value.
 
-\begin{figure}[t]
-  \begin{minipage}[t]{0.4\linewidth}
-    \begin{lstlisting}
-function present: $\mathbb{O} \to \mathbb{B}$
-function pending: $\mathbb{O} \to \mathbb{B}$
-function arg: $\mathbb{V} \to \mathbb{O}$
-function before: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
-
-rule inv(enq,v):
-  let k := new $\mathbb{O}$
-  present(k) := true
-  pending(k) := true
-  arg(v) := k
-  forall k' with present(k'):
-    if $\lnot$pending(k'):
-      before(k',k) := true
-
-rule lin(enq,v):
-  pass
-
-rule ret(enq,v):
-  let k := arg(v)
-  pending(k) := false
-
-rule inv(deq,v):
-  pass
-
-rule lin(deq,v):
-  if v = EMPTY:
-    forall k with present(k):
-      assert pending(k)
-  else:
-    let k := arg(v)
-    assert present(k)
-    forall k' with present(k'):
-      assert $\lnot$before(k', k)
-    present(k) := false
-
-rule ret(deq,v):
-  pass
-    \end{lstlisting}
-    \caption{The $AbsQ$ implementation.}
-    \label{fig:transitions:AbsQ}
-  \end{minipage}
-\end{figure}
 
 % Let $AbsQ_0$ denote this implementation (formally defined in Appendix~\ref{app:absImplQueue}).
 The following result states that the library $AbsQ$ has exactly the same set of histories as the standard abstract library $AbsQ_0$. % (see Appendix~\ref{app:absImplQueue} for a proof).
@@ -188,7 +184,7 @@ We describe a forward simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. The descri
 
 %An enqueue operation in a $\mathit{HWQ}$ state is pending and present if and only if its argument is stored in the array ${\tt items}$ or it has not yet written to the array  ${\tt items}$. Those operations should be $\mathsf{pending}$ and $\mathsf{present}$ in the related $AbsQ$ states. In addition to this, the forward simulation $F_1$ imposes following restrictions:
 An $\mathit{HWQ}$ state $s$ is related by $F_1$ to $AbsQ$ states $t$ where the predicate
-$\mathsf{present}$ is true for all the enqueues in $s$ whose argument is stored in the array ${\tt items}$, and all the pending enqueues that have not yet written to the array ${\tt items}$ (and only for these enqueues). We refer to such enqueues in $s$ as $\mathsf{present}$ enqueues. Also, $\mathsf{pending}(k)$ is ${\tt true}$ in $t$ whenever $k$ is a pending enqueue in $s$, $\mathsf{arg}(d)=k$ in $t$ whenever the argument of the enqueue $k$ in $s$ is $d$, and for every dequeue operation $k$ such that ${\tt x}(k)=d\neq {\tt null}$, we have that ${\tt y}(k)=d$ (recall that ${\tt y}$ is a local variable of the dequeue method in $AbsQ$). The order relation $\mathsf{before}$ in $t$ satisfies the following constraints:
+$\mathsf{present}$ is true for all the enqueues in $s$ whose argument is stored in the array ${\tt items}$, and all the pending enqueues that have not yet written to the array ${\tt items}$ (and only for these enqueues). We refer to such enqueues in $s$ as $\mathsf{present}$ enqueues. Also, $\mathsf{pending}(k)$ is ${\tt true}$ in $t$ whenever $k$ is a pending enqueue in $s$, $\mathsf{arg}(k)=d$ in $t$ whenever the argument of the enqueue $k$ in $s$ is $d$, and for every dequeue operation $k$ such that ${\tt x}(k)=d\neq {\tt null}$, we have that ${\tt y}(k)=d$ (recall that ${\tt y}$ is a local variable of the dequeue method in $AbsQ$). The order relation $\mathsf{before}$ in $t$ satisfies the following constraints:
 \vspace{-2mm}
 \begin{itemize}
 	\item[(a)] pending enqueues are maximal, i.e., for every two $\mathsf{present}$ enqueues $k$ and $k'$ such that $k'$ is $\mathsf{pending}$, we have that $\neg \mathsf{before}(k',k)$, % $k'\not< k$,
@@ -222,11 +218,11 @@ $\mathsf{present}$ is true for all the enqueues in $s$ whose argument is stored 
 The constraints on $\mathsf{before}$ ensure that a present enqueue whose argument is about to be removed by a dequeue operation is minimal. Thus, let $k'$ be a present enqueue that inserted its argument to ${\tt items}$, and $k_d$ a pending dequeue such that ${\tt canRemove}(k_d, k')$ holds and $k_d$ is just before its swap action at the reserved position of $k'$ i.e., ${\tt i}(k_d) = {\tt i}(k')$. Another pending enqueue $k$ cannot be ordered before $k'$ since pending enqueues are maximal by (a). Regarding the completed and present enqueues $k$, we consider two cases: $i(k) > i(k')$ and $i(k) < i(k')$. For the former case, the constraint (b) ensures $\neg \mathsf{before}(k,k')$ and for the latter case the constraint (c) ensures $\neg \mathsf{before}(k,k')$. Consequently, $k'$ is a minimal element w.r.t. $\mathsf{before}$ just before $k_d$ removes its argument.
 
 Next, we show that $F_1$ is indeed a $C\cup R\cup Lin(deq)$-forward simulation. Let $s$ and $t$ be states of $\mathit{HWQ}$ and $AbsQ$, respectively, such that $(s,t)\in F_1$.
-We omit discussing the trivial case of transitions labeled by call and return actions which are simulated by similar transitions of $AbsQ$ (for the return a dequeue operation $k$, we use the equality between the local variable ${\tt x}(k)$ in $s$ and the component $rv(k)$ in $t$).
+We omit discussing the trivial case of transitions labeled by call and return actions which are simulated by similar transitions of $AbsQ$. % (for the return a dequeue operation $k$, we use the equality between the local variable ${\tt x}(k)$ in $s$ and the component $rv(k)$ in $t$).
 %\textcolor{red}{ I think it is good to mention again that call/return actions in HWQ correspond to the same call/return actions in AbsQ (without any other internal action). I also think that invoke enqueue operation is non-trivial. Preservation of the strict partial order and all of the above items a, b and c needs to be rechecked.}
 
 %\setlength{\parskip}{0pt}
-We show that each internal step of an enqueue or dequeue, except the execution of {\tt swap} returning a non-null value in dequeue (which represents its linearization point), is simulated by an \emph{empty} sequence of $AbsQ$ transitions, i.e., for every state $s'$ obtained through one of these steps, if $(s,t)\in F_1$, then $(s',t)\in F_1$ for each $AbsQ$ state $t$.
+We show that each internal step of an enqueue or dequeue, except a {\tt swap} returning a non-null value in dequeue (which represents its linearization point), is simulated by an \emph{empty} sequence of $AbsQ$ transitions, i.e., for every state $s'$ obtained through one of these steps, if $(s,t)\in F_1$, then $(s',t)\in F_1$ for each $AbsQ$ state $t$.
 Essentially, this consists in proving the following property, called \emph{monotonicity}: the set of possible $\mathsf{before}$ relations associated by $F_1$ to $s'$ doesn't exclude any order $\mathsf{before}$ associated to $s$.
 %Essentially, this boils down to showing that the constraints over $<$ in the definition of $\mathit{fs}$ are an invariant for these steps.
 
@@ -250,7 +246,7 @@ the second statement (since the position it reserved is still {\tt null}) and it
 
 Finally, we show that the linearization point of a dequeue $k$ of $\mathit{HWQ}$, i.e., an execution of {\tt swap} returning a non-null value $d$, from state $s$ and leading to a state $s'$ is simulated by a transition labeled by $lin(deq,d,k)$ of $AbsQ$ from state $t$. By the definition of $\mathit{HWQ}$, there is a unique enqueue $k_e$ which filled the position updated by $k$, i.e., ${\tt i}_s(k_e)=i_s(k)$ and ${\tt x}_{s'}(k)={\tt x}_s(k_e)$.
 
-We show that $k_e$ is minimal in the order $\mathsf{before}$ of $t$ which implies that $k_e$ could be chosen by $lin(deq,d,k)$ step applied on $t$. As explained previously, instantiating item (c) in the definition of $\mathsf{before}$ with $k'=k_e$ and $k_d=k$; and instantiating item (b) with $k=k_e$, we ensures the minimality of $k_e$. Moreover, the state $t'$ obtained from $t$ through a $lin(deq,d,k)$ transition is related to $s'$ because the value added by $k_e$ is not anymore present in {\tt items} and $\mathsf{present}(k_e)$ doesn't hold in $t'$.
+We show that $k_e$ is minimal in the order $\mathsf{before}$ of $t$ which implies that $k_e$ could be chosen by $lin(deq,d,k)$ step applied on $t$. As explained previously, instantiating item (c) in the definition of $\mathsf{before}$ with $k'=k_e$ and $k_d=k$, and instantiating item (b) with $k=k_e$, we ensure the minimality of $k_e$. Moreover, the state $t'$ obtained from $t$ through a $lin(deq,d,k)$ transition is related to $s'$ because the value added by $k_e$ is not anymore present in {\tt items} and $\mathsf{present}(k_e)$ doesn't hold in $t'$.
 %Thus, instantiating item (c) in the definition of $\mathsf{before}$ with $k'=k_e$ and $k_d=k$ we get that every enqueue that reserved a position smaller than the one of $k_e$ can't be ordered before $k_e$ in the order $\mathsf{before}$. Also, applying item (b) with $k=k_e$ we get the same for every enqueue that reserved a bigger position. An enqueue that didn't reserve a position is by definition maximal in $<$ and therefore, not a predecessor of $k_e$. Then, the state $t'$ obtained from $t$ through a $lin(deq,d,k)$ transition is related to $s'$ because (1) the value added by $k_e$ is not anymore present in {\tt items} which implies that $k_e$ doesn't occur in any $AbsQ$ state related to $s'$, and (2) the value of ${\tt x}(k)$ is set to $d\neq {\tt null}$ which implies that $rv(k)$ is set to $d$ in every $AbsQ$ state related to $s'$.
 %
 %\vfill
