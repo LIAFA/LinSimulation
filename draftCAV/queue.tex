@@ -1,7 +1,7 @@
 %!TEX root = draft.tex
-\vspace{-3.5mm}
+\vspace{-1mm}
 \section{Queues With Fixed Dequeue Linearization Points}\label{sec:queues}
-\vspace{-1.5mm}
+%\vspace{-1.5mm}
 
 The classical abstract queue implementation, denoted $AbsQ_0$, maintains a
 sequence of enqueued values; dequeues return the oldest non-dequeued value, at
@@ -95,13 +95,13 @@ Time-Stamped Queue~\cite{DBLP:conf/popl/DoddsHK15}.
 
 
 %TODO HOW CAN WE CONVINCE THAT OTHER IMPLEMENTATIONS HAVE THE SAME PROPERTY ?
-\vspace{-3.5mm}
+\vspace{-2.5mm}
 \subsection{Enqueue Methods With Non-Fixed Linearization Points}
-\vspace{-1mm}
+%\vspace{-1mm}
 % describe a queue implementation listed in Figure~\ref{fig:HerlihyWing} and known as the Herlihy \& Wing Queue~\cite{journals/toplas/HerlihyW90} ($\mathit{HWQ}$ for short), where only the dequeue methods have fixed linearization points.
 We describe $\mathit{HWQ}$ where the linearization points of the enqueue methods are not fixed.
 The shared state consists of an array {\tt items} storing the values in the queue and a counter {\tt back} storing the index of the first unused position in {\tt items}. Initially, all the positions in the array are {\tt null} and {\tt back} is 0.
-An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position can't be used by other enqueues) and then, stores the argument {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
+An enqueue method starts by reserving a position in {\tt items} ({\tt i} stores the index of this position and {\tt back} is incremented so the same position cannot be used by other enqueues) and then, stores the argument {\tt x} at this position. The dequeue method traverses the array {\tt items} starting from the beginning and atomically swaps {\tt null} with the encountered value. If the value is not {\tt null}, then the dequeue returns that value. If it reaches the end of the array, then it restarts.
 
 The linearization points of the enqueues are not fixed, they depend on dequeues executing in the future. Consider the following trace with two concurrent enqueues (${\tt i}(k)$ represents the value of {\tt i} in operation $k$): $inv(enq,x,1)$, $inv(enq,y,2)$, ${\tt i}(1) = \mbox{{\tt bck++}}$, ${\tt i}(2) = \mbox{{\tt bck++}}$, ${\tt items[i(}2{\tt )]} = y$.
 %\vspace{-1.5mm}
@@ -125,9 +125,9 @@ This claim is formally proved in Section~\ref{ssec:HerlihyWing}.
 Since the linearization points of the enqueues are determined by future dequeue invocations, there exists no forward simulation from $\mathit{HWQ}$ to $AbsQ_0$.
 In the following, we describe the abstract implementation $AbsQ$ for which such a forward simulation does exist.
 
-\vspace{-3.5mm}
+\vspace{-2.5mm}
 \subsection{Abstract Queue Implementation}
-\vspace{-1.5mm}
+%\vspace{-1.5mm}
 
 %\textcolor{red}{Important: I think EMPTY return is problematic and I defined it wrong in my machine too. We should be able to return EMPTY if there are only pending nodes. Consider the following history of $AbsQ_0$: $inv(enq, d_1,k_1), inv(enq, d_2,k_2), inv(deq, k_3), lin(deq, \texttt{EMPTY}, k_3)$. This history should be reflected in $AbsQ$ by enabling lin \texttt{EMPTY} of dequeue when there are pending nodes. We also need to update the rules in figure.}
 Informally, $AbsQ$ records the set of enqueue operations, whose argument has not yet been removed by a matching dequeue operation. In addition, it records the happens-before order between those enqueue operations: this is a partial order ordering an enqueue $k_1$ before another enqueue $k_2$ iff $k_1$ returned before $k_2$ was invoked.
@@ -184,9 +184,9 @@ A queue implementation $L$ with fixed dequeue linearization points is a $C\cup R
 \vspace{-1.5mm}
 \end{corollary}
 
-\vspace{-4.5mm}
+\vspace{-2.5mm}
 \subsection{A Correctness Proof For Herlihy\&Wing Queue}\label{ssec:HerlihyWing}
-\vspace{-1mm}
+%\vspace{-1mm}
 We describe a forward simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. The description of $\mathit{HWQ}$ in Fig.~\ref{fig:HerlihyWing} defines an LTS whose states contain the shared array ${\tt items}$ and the shared counter ${\tt back}$ together with a valuation for the local variables ${\tt i}$, ${\tt x}$, and ${\tt range}$, and the control location of each operation. A transition is either a call or a return action, or a statement in one of the two methods ${\tt enq}$ or ${\tt deq}$.
 
 %An enqueue operation in a $\mathit{HWQ}$ state is pending and present if and only if its argument is stored in the array ${\tt items}$ or it has not yet written to the array  ${\tt items}$. Those operations should be $\mathsf{pending}$ and $\mathsf{present}$ in the related $AbsQ$ states. In addition to this, the forward simulation $F_1$ imposes following restrictions:
