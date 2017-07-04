@@ -1,73 +1,84 @@
 %!TEX root = draft.tex
-\vspace{-3.5mm}
+\vspace{-1mm}
 \section{Stacks With Fixed Pop Commit Points}\label{sec:stacks}
-\vspace{-1.5mm}
+%\vspace{-1.5mm}
 The abstract implementation in Section~\ref{sec:queues} can be adapted to stacks, the main modification being that the linearization point $lin(pop,d,k)$ with $d\neq{\tt EMPTY}$ is enabled when $k$ is added by a push which is maximal in the happens-before order stored in the state. However, there are stack implementations, e.g., Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short), which cannot be proved correct using forward simulations to this abstract implementation because the linearization points of the pop operations are not fixed.
-%this stack implementation cannot simulate (through forward simulations) existing stack implementations like the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short) where the linearization points of the pop operations are not fixed. 
-Exploiting particular properties of the stack semantics, we refine the ideas used in $AbsQ$ and define 
+%this stack implementation cannot simulate (through forward simulations) existing stack implementations like the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short) where the linearization points of the pop operations are not fixed.
+Exploiting particular properties of the stack semantics, we refine the ideas used in $AbsQ$ and define
 a new abstract implementation for stacks, denoted as $AbsS$, which is able to simulate such implementations. Forward simulations to $AbsS$ are complete for proving the correctness of stack implementations provided that the point in time where the return value of a pop operation is determined, called \emph{commit point}, corresponds to a fixed statement in the pop method.
 % provided that the point in time where the return value of a pop operation is determined corresponds to a fixed action. To demonstrate the use of this abstract implementation we provide a correctness proof for a simplified version of Time-Stamped Stack that preserves its most complex behaviors.
 
-\vspace{-3.5mm}
+\vspace{-2.5mm}
 \subsection{Pop Methods With Fixed Commit Points}
-\vspace{-1mm}
-\begin{wrapfigure}{l}{5.2cm}
-\vspace{-10.5mm}
-\begin{lstlisting}
+%\vspace{-1mm}
+
+We explain the meaning of the commit points on a simplified version of the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short) given in Fig.~\ref{fig:TimeStamped}. This  implementation maintains an array of singly-linked lists, one for each thread, where list nodes contain a data value (field {\tt data}), a timestamp (field {\tt ts}), the next pointer (field {\tt next}), and a Boolean flag indicating whether the node represents a value removed from the stack (field {\tt taken}). Initially, each list contains a sentinel dummy node pointing to itself with timestamp $-1$ and the flag {\tt taken} set to {\tt false}.
+
+
+\begin{figure}[t]
+  \begin{minipage}[t]{0.49\linewidth}
+    \begin{lstlisting}
 struct Node{
   int data;
   int ts;
   Node* next;
-  boolean taken;
+  bool taken;
 };
+
+bool CAS(bool data, bool a, bool b);
+
 Node* pools[maxThreads];
-int TS = 0;   
+int TS = 0;
 
 void push(int x) {
-  Node* n = new Node(x,MAX_INT,
-                        null,false);
+  Node* n =
+    new Node(x,MAX_INT, null,false);
   n->next = pools[myTID];
   pools[myTID] = n;
   int i = TS++;
   n->ts = i;
 }
+    \end{lstlisting}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.49\linewidth}
+    \begin{lstlisting}
 int pop() {
- boolean success = false;
- int maxTS = -1;
- Node* youngest = null;
- while ( !success ) {
-   maxTS = -1; youngest = null;
-   for(int i=0; i<maxThreads; i++){
-     Node* n = pools[i];
-     while (n->taken && n->next != n)
-       n = n->next;
-     if(maxTS < n->ts) {
-       maxTS = n->ts; youngest = n;
-     }
-   }
-   if (youngest != null)
-     success=CAS(youngest->taken,
-                       false,true);
- }
- return youngest->data;
+  bool success = false;
+  int maxTS = -1;
+  Node* youngest = null;
+  while ( !success ) {
+    maxTS = -1; youngest = null;
+    for(int i=0; i<maxThreads; i++) {
+      Node* n = pools[i];
+      while (n->taken && n->next != n)
+        n = n->next;
+      if(maxTS < n->ts) {
+        maxTS = n->ts; youngest = n;
+      }
+    }
+    if (youngest != null)
+      success =
+        CAS(youngest->taken, false, true);
+  }
+  return youngest->data;
 }
-\end{lstlisting}
-\vspace{-6mm}
-\caption{Time-Stamped Stack.} %We assume that every statement is atomic.}
-\label{fig:TimeStamped}
-\vspace{-7mm}
-\end{wrapfigure}
-We explain the meaning of the commit points on a simplified version of the Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15} ($\mathit{TSS}$, for short) given in Fig.~\ref{fig:TimeStamped}. This  implementation maintains an array of singly-linked lists, one for each thread, where list nodes contain a data value (field {\tt data}), a timestamp (field {\tt ts}), the next pointer (field {\tt next}), and a boolean flag indicating whether the node represents a value removed from the stack (field {\tt taken}). Initially, each list contains a sentinel dummy node pointing to itself with timestamp $-1$ and the flag {\tt taken} set to {\tt false}.
+    \end{lstlisting}
+  \end{minipage}
+
+  \caption{The Time-Stamped Stack~\cite{DBLP:conf/popl/DoddsHK15}.}
+  \label{fig:TimeStamped}
+\end{figure}
 
 Pushing a value to the stack proceeds in several steps: adding a node with maximal timestamp in the list associated to the thread executing the push (given by the special variable {\tt myTID}), asking for a new timestamp (given by the shared variable {\tt TS}), and updating the timestamp of the added node. Popping a value from the stack consists in traversing all the lists, finding the first element which doesn't represent a removed value (i.e., {\tt taken} is {\tt false}) in each list, and selecting the element with the maximal timestamp. A compare-and-swap (CAS) is used to set the {\tt taken} flag of this element to {\tt true}. The procedure restarts if the CAS fails.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=11.5cm]{fig-tss.pdf}
-\vspace{-4mm}
+\vspace{-3mm}
 \caption{An execution of $\mathit{TSS}$. An operation is pictured by a line delimited by two circles denoting the call and respectively, the return action. Pop operations with identifier $k$ and removing value $d$ are labeled $pop(d,k)$. Their representation includes another circle that stands for a successful CAS which is their commit point. The library state after an execution prefix delimited at the right by a dotted line is pictured in the bottom part (the picture immediately to the left of the dotted line). A pair $(d,t)$ represents a list node with ${\tt data}=d$ and ${\tt ts}=t$, and ${\tt i}(1)$ denotes the value of {\tt i} in the pop with identifier 1. We omit the nodes where the field {\tt taken} is {\tt true}.}
 \label{fig:commit}
-\vspace{-6mm}
+\vspace{-4mm}
 \end{figure}
 
 
@@ -79,20 +90,20 @@ An interesting property of the successful CASs in pop operations is that they fi
 
 %TODO WHAT CAN WE SAY ABOUT COMMIT POINTS IN OTHER IMPLEMENTATIONS
 
-%Usually, a stack implementation stores the pushed values into a data structure, e.g., a singly-linked list, and a pop operation contains an action (typically, a compare-and-swap) that removes an element from this data structure (or sets a flag associated to this element to a ``deleted'' state). Such an action represents a commit point since the pop operation will return the value stored in this element. 
+%Usually, a stack implementation stores the pushed values into a data structure, e.g., a singly-linked list, and a pop operation contains an action (typically, a compare-and-swap) that removes an element from this data structure (or sets a flag associated to this element to a ``deleted'' state). Such an action represents a commit point since the pop operation will return the value stored in this element.
 
 
-%TODO GIVE AN EXAMPLE TO SHOW THE ISSUE WITH POP LINEARIZATION POINTS, AND TO SHOW THAT COMMIT POINTS ARE RIGHT LIMITS FOR THE INTERVAL OF A LIN POINT, I.E., A POP WITH A LATER COMMIT POINT CAN BE LINEARIZED BEFORE. NEED ONLY 2 POPS IN AN EXECUTION 
+%TODO GIVE AN EXAMPLE TO SHOW THE ISSUE WITH POP LINEARIZATION POINTS, AND TO SHOW THAT COMMIT POINTS ARE RIGHT LIMITS FOR THE INTERVAL OF A LIN POINT, I.E., A POP WITH A LATER COMMIT POINT CAN BE LINEARIZED BEFORE. NEED ONLY 2 POPS IN AN EXECUTION
 
 When the commit points of pop operations are fixed to particular implementation actions (e.g., a successful CAS) we assume that the library is an LTS over an alphabet that contains actions $com(pop,d,k)$ with $d\in\<Vals>$ and $k\in\<Ops>$ (denoting the commit point of the pop with identifier $k$ and returning $d$). Let $Com(pop)$ be the set of such actions.
-%We consider a set of actions $Com(pop)=\set{com(pop,d,k):d\in\<Vals>, k\in\<Ops>}$, called \emph{commit points}, representing actions of a pop operation where its return value is determined. 
+%We consider a set of actions $Com(pop)=\set{com(pop,d,k):d\in\<Vals>, k\in\<Ops>}$, called \emph{commit points}, representing actions of a pop operation where its return value is determined.
 %TODO DESCRIBE THE TIME-STAMPED STACK, EXPLAIN THAT NO METHOD HAS A FIXED LIN POINT, GIVE THE COMMIT POINTS, SHOW THAT COMMIT POINTS ARE NOT LIN POINTS
 %
 %COMMIT POINTS ARE LINEARIZATION POINTS WHEN THE LIBRARY IS INTERPRETED AS A MULTISET
 
-\vspace{-3mm}
+\vspace{-2.5mm}
 \subsection{Abstract stack implementation}
-\vspace{-1mm}
+%\vspace{-1mm}
 We define an abstract stack $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that essentially, similarly to $AbsQ$, maintains the happens-before order of the pushes whose value has not yet been  removed by a matching pop. Pop operations are treated differently since the commit points are not necessarily linearization points. Intuitively, a pop can be linearized before its commit point. Each pop operation starts by taking a snapshot of the completed push operations which are maximal in the happens-before, more precisely, which don't happen before another completed push operation. Also, the library maintains the set of push operations overlapping with each pop operation. The commit point $com(pop,d,k)$ with $d\neq {\tt EMPTY}$ is enabled if either $d$ was added by one of the push operations in the initial snapshot, or by a push happening earlier when arguments of pushes from the initial snapshot have been removed, or by one of the push operations that overlaps with pop $k$. The commit point $com(pop,{\tt EMPTY},k)$ is enabled if all the values added by push operations happening before $k$ have been removed. The effect of the commit points is explained below through examples.
 \vspace{-.4mm}
 
@@ -107,262 +118,179 @@ We define an abstract stack $AbsS$ over alphabet $C\cup R\cup Com(pop)$ that ess
 \vspace{-2mm}
 \caption{Simulating stack histories with $AbsS$.}
 \label{fig:stackSim}
-\vspace{-6.5mm}
+\vspace{-4mm}
 \end{figure}
 
 Fig.~\ref{fig:stackSim} pictures two executions of $AbsS$ for two extended histories (that include pop commit points). For readability, we give the state of $AbsS$ only after several execution prefixes delimited at the right by a dotted line. We focus on pop operations -- the effect of push calls and returns is similar to enqueue calls and returns in $AbsQ$. Let us first consider the history on the top part. The first state we give is reached after the call of pop with identifier $3$. This shows the effect of a pop invocation: the greatest completed pushes according to the current happens-before (here, the push with identifier $1$) are marked as $\mathsf{maxAtInvoc}(3)$, and the pending pushes are marked as $\mathsf{overlap}(3)$. As a side remark, any other push operation that starts after pop $3$ would be also marked as $\mathsf{overlap}(3)$.
 The commit point $com(pop,x,3)$ (pictured with a red circle) is enabled because $x$ was added by a push marked as $\mathsf{maxAtInvoc}(3)$. The effect of the commit point is that push $1$ is removed from the state (the execution on the bottom shows a more complicated case). For the second pop, the commit point $com(pop,y,4)$ is enabled because $y$ was added by a push marked as $\mathsf{overlap}(4)$. The execution on the bottom shows an example where the marking $\mathsf{maxAtInvoc}(k)$ for some pop $k$ is updated at commit points. The pushes $3$ and $4$ are marked as $\mathsf{maxAtInvoc}(5)$ and $\mathsf{maxAtInvoc}(6)$
 when the pops $5$ and $6$ start. Then, $com(pop,t,5)$ is enabled since $t$ was added by $push(t,4)$ which is marked as $\mathsf{maxAtInvoc}(5)$. Besides removing $push(t,4)$, the commit point produces a state where a pop committing later, e.g., pop $6$, can remove $y$ which was added by a predecessor of $push(t,4)$ in the happens-before ($y$ could become the top of the stack when $t$ is removed). This history is valid because $push(y,2)$ can be linearized after $push(x,1)$ and $push(z,3)$. Thus, push 2, a predecessor of the push which is removed, is marked as $\mathsf{maxAtInvoc}(6)$. Push $1$ which is also a predecessor of the removed push is not marked as $\mathsf{maxAtInvoc}(6)$ because it happens before another push, i.e., push 3, which is already marked as $\mathsf{maxAtInvoc}(6)$ (the value added by push 3 should be removed before the value added by push 1 could become the top of the stack).
 
-\begin{figure} [t]
-%\vspace{-2mm}
-\hspace{-15mm}
-\begin{minipage}[t]{7.5cm}
-\scriptsize{
-{	%\centering
-	\begin{align*}
-%		& \mathsf{Operations}, \mathsf{Values} : \mathsf{Sort} \\
-		& \text{\underline{Shared State}} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{present} : \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{pending} : \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{arg} : \<Ops> \rightarrow \<Vals> \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{before} : \<Ops> \times \<Ops> \rightarrow \{{\tt true},{\tt false}\} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{maxAtInvoc} : \<Ops> \rightarrow 2^{\<Ops>} \\
-		& \text{{\ttfamily \bfseries function}}\ \mathsf{overlap} : \<Ops> \rightarrow 2^{\<Ops>} \\
-%		& \mathsf{stored}, \mathsf{pending} : \mathsf{Operations} &\mbox{ // the status of an enqueue} \\
-%		& \mathsf{arg} : \mathsf{Operations} \rightarrow \mathsf{Values} &\mbox{ // the argument of an enqueue} \\
-	\end{align*}
-}}
-\end{minipage}
-\begin{minipage}[t]{7.3cm}
-\begin{lstlisting}
-void push($\<Vals>$ x) {
-  atomic rule inv(push,x,k = new);
-  atomic rule ret(push,k);
-}
+\begin{figure}[t]
+  \begin{minipage}[t]{0.39\linewidth}
+    \begin{lstlisting}
+function loc: $\mathbb{O} \to \set{\tt inv, com, ret, \bot}$
+function arg, ret: $\mathbb{O} \to \mathbb{V}$
+function present, pending: $\mathbb{O} \to \mathbb{B}$
+function before: $\mathbb{O} \times \mathbb{O} \to \mathbb{B}$
+function maxAtInvoc: $\mathbb{O} \to \pow{\mathbb{O}}$
+function overlap: $\mathbb{O} \to \pow{\mathbb{O}}$
 
-$\<Vals>$ pop() {
-  atomic rule inv(pop,k = new);
-  atomic rule com(pop,y,k);
-  atomic rule ret(pop,y,k);
-}
-\end{lstlisting}
-\end{minipage}
+rule inv(push,x,k):
+  present(k) := true
+  pending(k) := true
+  arg(k) := x
+  forall k1 with present(k1):
+    if $\lnot$pending(k1):
+      before(k1,k) := true
+  forall k1:
+    overlap(k1) := overlap(k1)$\cup$$\{$k$\}$
 
-\vspace{-5mm}
-\begin{minipage}[t]{6.2cm}
-\begin{lstlisting}
-rule inv(push,x,k) = {
-  $\mathsf{present}$(k) = true;
-  $\mathsf{pending}$(k) = true;
-  $\mathsf{arg}$(k) = x;
-  forall k1 with $\mathsf{present}$(k1)$\land \neg \mathsf{pending}$(k1) do
-    $\mathsf{before}$(k1,k) = true;
-  forall k1 do
-    $\mathsf{overlap}$(k1) = $\mathsf{overlap}$(k1) $\cup$ $\{$k$\}$;
-}
-rule ret(push,k) = {
-  $\mathsf{pending}$(k) = false;
-  return;
-}
-\end{lstlisting}
-\end{minipage}
-\begin{minipage}[t]{5cm}
-%\vspace{-3mm}
-\begin{lstlisting}
-rule inv(pop,k) = {
-  forall k1 with $\mathsf{present}$(k1)$\land \neg \mathsf{pending}$(k1)$\land$
-                 $\neg \exists k'.\ \mathsf{present}(k')\land \neg \mathsf{pending}(k')\,\land$ 
-                 $\mathsf{before}$(k1,$k'$) do
-    $\mathsf{maxAtInvoc}$(k) = $\mathsf{maxAtInvoc}$(k) $\cup$ $\{$k1$\}$;
-  forall k1 with $\mathsf{present}$(k1)$\land \mathsf{pending}$(k1) do
-    $\mathsf{overlap}$(k) = $\mathsf{overlap}$(k) $\cup$ $\{$k1$\}$;
-}
-rule ret(pop,y,k) = {
-  return y;
-}
-\end{lstlisting}
-\end{minipage}
+rule ret(push,k):
+  pending(k) := false
 
-\vspace{-4mm}
-\begin{lstlisting}
-rule com(pop,y,k) = {
-  choose a $\in$ {true, false};
-  if ((a $\vee$ $\forall k'.\ \mathsf{present}(k')$=false) $\land$ $\mathsf{maxAtInvoc}$(k)=$\,\emptyset$) 
-    y = EMPTY;
-  else 
-    choose k1 $\in\<Ops>$ with $\mathsf{present}$(k1)$\land$ k1$\in\mathsf{maxAtInvoc}$(k)$\cup\,\mathsf{overlap}$(k);
-    $\mathsf{present}$(k1) = false;
-    y = $\mathsf{arg}$(k1);
-    forall k2 with k1$\in\mathsf{maxAtInvoc}$(k2) do
-      $\mathsf{maxAtInvoc}$(k2) = $\mathsf{maxAtInvoc}$(k2)$\setminus\{$k1$\}$;
-      forall k3 with $\mathsf{before_1}$(k3,k1)$\land \forall k'.\ (\mathsf{before_1}($k3$,k')\land k'\neq $k1$)\Rightarrow k'\in \mathsf{overlap}($k2$)$ do
-        $\mathsf{maxAtInvoc}$(k2) = $\mathsf{maxAtInvoc}$(k2)$\cup\{$k3$\}$;
-}
-\end{lstlisting}
- %\neg\exists k'.\ \mathsf{present}(k')\,=\,$true$\,\land\, \mathsf{before}($k3,$k')\land \mathsf{before}(k',$k1$)$
+rule ret(pop,y,k):
+  assert ret(k) = y
+    \end{lstlisting}
+  \end{minipage}
+  \begin{minipage}[t]{0.59\linewidth}
+    \begin{lstlisting}
+rule inv(pop,k):
+  forall k1 with present(k1):
+    if pending(k1):
+      overlap(k) := overlap(k) $\cup$ $\{$k1$\}$
+    else:
+      if $\forall$k2.present(k2)$\land$before(k1,k2)$\Rightarrow$pending(k2):
+        maxAtInvoc(k) = maxAtInvoc(k) $\cup$ $\{$k1$\}$
 
-%{\scriptsize
-%  \centering
-%  \begin{mathpar}
-%    \inferrule[call-push]{
-%      k\not\in dom(cp) \\ 
-%      d\neq {\tt EMPTY} \\
-%      \forall k'.\ ov'(k') = ov(k')\cup \{k\}
-%    }{
-%      O,<,\ell,rv,cp,be,ov 
-%      \xrightarrow{inv(push,d,k)} 
-%      O\cup\{k\},<\cup\ {\tt COMP}(O)\times\{k\},\ell[k\mapsto (d,{\tt PEND})],rv,cp[k\mapsto A_1],be,ov'
-%    }\hspace{5mm}
-%
-%    \vspace{-1mm}
-%    \inferrule[call-pop]{
-%      k\not\in dom(cp) %\\ k\not\in dom(cp) \\ k\not\in dom(cp)
-%    }{
-%      O,<,\ell,rv,cp,be,ov
-%      \xrightarrow{inv(pop,k)} 
-%      O,<,\ell,rv,cp[k\mapsto R_1],be[k\mapsto maxCo(O)],ov[k\mapsto {\tt PEND}(O)]
-%    }\hspace{5mm}
-%    
-%    \vspace{-1mm}
-%    \inferrule[ret-pop]{
-%       cp(k) = R_2 \\
-%       rv(k)=d  
-%    }{
-%      O,<,\ell,rv,cp,be,ov
-%      \xrightarrow{ret(pop,d,k)}
-%      O,<,\ell,rv,cp[k\mapsto R_3],be,ov
-%    }\hspace{5mm}
-%
-%    \vspace{-1mm}
-%    \inferrule[ret-push1]{
-%      cp(k) = A_1 \\
-%      k \in O \\
-%      \ell(k) = (d,{\tt PEND}) 
-%    }{
-%      O,<,\ell,rv,cp,be,ov
-%      \xrightarrow{ret(push,k)}
-%      O,<,\ell[k\mapsto (d,{\tt COMP})],rv,cp[k\mapsto A_2],be,ov
-%    }\hspace{5mm}
-%    \inferrule[ret-push2]{
-%      cp(k) = A_1 \\
-%      k \not\in O 
-%    }{
-%      O,<,\ell,rv,cp,be,ov
-%      \xrightarrow{ret(push,k)}
-%      O,<,\ell,rv,cp[k\mapsto A_2],be,ov
-%    }\hspace{5mm}
-%
-%    \inferrule[com-pop1]{
-%       cp(k) = R_1 \\
-%       d\neq{\tt EMPTY} \\
-%       k'\in be(k)\cup ov(k) \\
-%        \ell_1(k')=d \\
-%       \forall k_1.\ k'\not\in be(k_1) \Rightarrow be'(k_1)=be(k_1) \\     \\
-%       \forall k_1.\ k'\in be(k_1) \Rightarrow be'(k_1)=(be(k_1)\setminus\{k'\})\cup \{k_2: k_2\in pred_{<}(k') \land \forall k_3. (k_2\in pred_{<}(k_3) \land k_3\neq k') => k_3\in ov(k_1)\} \\
-%    }{
-%      O,<,\ell,rv,cp,be,ov
-%      \xrightarrow{com(pop,d,k)} \\
-%      O\setminus \{k'\},<\uparrow k',\ell,rv[k\mapsto d],cp[k\mapsto R_2],be',ov %be[\forall k''.\ k'\in be(k'') \Rightarrow k'' \mapsto (be(k'')\cup pred_{<}(k'))\setminus\{k'\}]
-%    }\hspace{5mm}
-%
-%    %\vspace{-1mm}
-%    \inferrule[com-pop2]{
-%       cp(k) = R_1 \\
-%       be(k)=\emptyset
-%    }{
-%      O,<,\ell,rv,cp,be,ov
-%      \xrightarrow{com(pop,{\tt EMPTY},k)}
-%      O,<,\ell,rv[k\mapsto {\tt EMPTY}],cp[k\mapsto R_2],be,ov
-%    }\hspace{5mm}
-%
-%    
-%      \end{mathpar}
-%  }
- \vspace{-4mm}
-  \caption{The abstract stack implementation $AbsS$. We use $\mathsf{before_1}$ to denote the immediate successor relation induced by $\mathsf{before}$, i.e., $\mathsf{before}_1(k,k')={\tt true}$ iff $\neg\exists k''.\ \mathsf{present}(k'')\land \mathsf{before}(k,k'')\land \mathsf{before}(k'',k')$.
-%  The transition relation of $AbsQ$. We use the following notions: $maxCo(O)$ is the set of greatest operations in $O$ (w.r.t. $<$) which are completed, i.e., $maxCo(O)=\set{k\in O: \ell_2(k)={\tt COMP}, \forall k'\in O.\ k' < k \vee \ell_2(k')={\tt PEND}}$, ${\tt PEND}(O)=\{k\in O: \ell_2(k)={\tt PEND}\}$, and $pred_{<}(k')$ is the set of immediate predecessors of $k'$ according to $<$, i.e., $pred_{<}(k')=\set{k\in O: k < k'\land \forall k''\in O.\ k'' > k' \vee k'' < k}$.%\textcolor{red}{call-push should have $d \neq EMPTY$ in the premise. If I understand correctly, there is a problem change in $be$ in lin-pop1 rule. What I understand is we move $k''$ to every predecesoor of $k'$. But we should not move it to predecessor of $k'$ if this predecessor has a successor $m$ such that $m \in be(k'')$. Is this case reflected in your definition. Please read sub-bullet 4 of bullet 4 in the definition of $L_I$ in my document. Lin-pop2 seems ok for me. Last note: Bibliography seems not correct to me.}  $f[\forall k.\ k\mapsto expr(k)]$ is the function $g$ defined by $g(k)=expr(k)$,   $g(k)=f(k)$ for all $k$ such that $guard(k)$ is false, and 
-  }
+rule com(pop,y,k):
+  ret(k) := y
+  if y = EMPTY:
+    assert maxAtInvoc(k) = $\emptyset$
+  else:
+    let k1 := arg$^{-1}$(y)
+    assert present(k1)
+    assert k1 $\in$ maxAtInvoc(k) $\cup$ overlap(k)
+    present(k1) := false
+    forall k2 with k1 $\in$ maxAtInvoc(k2):
+      maxAtInvoc(k2) := maxAtInvoc(k2) $\setminus$ $\{$k1$\}$
+      forall k3 with before$_1$(k3,k1):
+        if $\forall$k4$\neq$k1.before$_1$(k3,k4) $\Rightarrow$ k4$\in$overlap(k2):
+          maxAtInvoc(k2) := maxAtInvoc(k2) $\cup$ $\{$k3$\}$
+    \end{lstlisting}
+  \end{minipage}
+  \caption{The $AbsS$ implementation; each rule \lstinline|$\alpha$(\_,k)|
+  implicitly begins with \lstinline|assert loc(k)=$\alpha$| and ends with the
+  appropriate \lstinline|loc(k):=$\beta$|; and \lstinline|before$_1$| denotes
+  the transitive reduction of \lstinline|before|.}
   \label{fig:transitions:AbsS}
-\vspace{-5mm}
 \end{figure}
 
-The description of $AbsS$ as an abstract state machine is given in Fig.~\ref{fig:transitions:AbsS}. Compared to the queue implementation $AbsQ$, the shared state contains two more functions $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$. For each pop operation $k$, $\mathsf{maxAtInvoc}(k)$ records the set of completed push operations which were maximal in the happens-before (defined by $\mathsf{before}$) when pop $k$ was invoked, or happening earlier provided that the values of all the pushes happening later than one of these maximal ones and before pop $k$ have been removed. Also, for each pop operation $k$, $\mathsf{overlap}(k)$ contains the push operations overlapping with pop $k$.
+The description of $AbsS$ as an abstract state machine is given in Fig.~\ref{fig:transitions:AbsS}. Compared to $AbsQ$, the state contains two more updatable functions $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$. For each pop operation $k$, $\mathsf{maxAtInvoc}(k)$ records the set of completed push operations which were maximal in the happens-before (defined by $\mathsf{before}$) when pop $k$ was invoked, or happening earlier provided that the values of all the pushes happening later than one of these maximal ones and before pop $k$ have been removed. Also, $\mathsf{overlap}(k)$ contains the push operations overlapping with a pop $k$.
 %Formally, the states of $AbsS$ are tuples $\tup{O,<,\ell,rv,cp,be,ov}$ where $<$ is a strict partial order over the set $O$ of operation identifiers, $\ell: O -> \<Vals>\times\{\tt{PEND,\tt{COMP}}\}$ labels every identifier in $O$ with a value and a pending/completed flag, $rv:\<Ops> ~> \<Vals>$ records the return value of a pending pop fixed at its commit point, $cp:\<Ops> ~> \{A_1,A_2,R_1,R_2,R_3\}$ records the control point of every push ($A_1, A_2$) or pop operation ($R_1,R_2,R_3$), $be:\<Ops> ~> 2^O$ records the greatest completed push operations before a pop started or happening earlier provided that the values of all the push happening later have been removed, and $ov: \<Ops> ~> 2^O$ records push operations overlapping with a pop.
 %%The initial state has all these components set to $\emptyset$ and the transition relation $->$ is defined in Figure~\ref{fig:transitions:AbsS}.
 %All the components are $\emptyset$ in the initial state, and the transition relation $->$ is defined in Fig.~\ref{fig:transitions:AbsS}.
-In the initial state, the domain of every function (predicate) is empty. The push methods are similar to the enqueue methods in $AbsQ$. The only difference is that every newly invoked push operation {\tt k} is added to the set $\mathsf{overlap}(${\tt k1}$)$ for all pop operations {\tt k1} (since {\tt k} overlaps with all the currently pending pops). The rule {\tt inv(pop,k)}, marking the invocation of a pop, sets $\mathsf{maxAtInvoc}(${\tt k}$)$ and $\mathsf{overlap}(${\tt k}$)$ as explained above. The rule {\tt com(pop,y,k)} results in setting the return value {\tt y} to {\tt EMPTY} if the set $\mathsf{maxAtInvoc}(${\tt k}$)$ is empty (otherwise, there would be push operations happening before pop {\tt k} which makes the answer {\tt EMPTY} incorrect). It results in setting the return value to a value $d\neq\,${\tt EMPTY} when $d$ was added by a push {\tt k1} which belongs to $\mathsf{maxAtInvoc}(${\tt k}$)$ or $\mathsf{overlap}(${\tt k}$)$. In this case, the rule {\tt com(pop,y,k)} may also update $\mathsf{maxAtInvoc}(${\tt k2}$)$ for other pending pops {\tt k2}. More precisely, whenever $\mathsf{maxAtInvoc}(${\tt k2}$)$ contains the push {\tt k1}, the latter is replaced by the immediate predecessors of {\tt k1} (according to $\mathsf{before}$) that are followed exclusively by pushes overlapping with {\tt k2}.
+Initially, {\tt loc(k) = inv} for all {\tt k}, {\tt present(k1) = pending(k1) = before(k1,k2) = false}, and {\tt maxAtInvoc(k1) = overlap(k1) = }$\emptyset$, for all {\tt k1, k2}.
+%In the initial state, the domain of every function (predicate) is empty. 
+The rules for actions of push methods are similar to those for enqueues in $AbsQ$, except that every newly invoked push operation {\tt k} is added to the set $\mathsf{overlap}(${\tt k1}$)$ for all pop operations {\tt k1} (since {\tt k} overlaps with all the currently pending pops). 
+The rule {\tt inv(pop,k)}, marking the invocation of a pop, sets $\mathsf{maxAtInvoc}(${\tt k}$)$ and $\mathsf{overlap}(${\tt k}$)$ as explained above. The rule {\tt com(pop,EMPTY,k)} is enabled when 
+%results in setting the return value {\tt y} to {\tt EMPTY} if 
+the set $\mathsf{maxAtInvoc}(${\tt k}$)$ is empty (otherwise, there would be push operations happening before pop {\tt k} which makes the return value {\tt EMPTY} incorrect). Also, {\tt com(pop,y,k)} with 
+{\tt y}$\,\neq\,${\tt EMPTY} is enabled when {\tt y} was added by a push {\tt k1} which belongs to $\mathsf{maxAtInvoc}({\tt k})\cup\mathsf{overlap}({\tt k})$. This rule may also update $\mathsf{maxAtInvoc}(${\tt k2}$)$ for other pending pops {\tt k2}. More precisely, whenever $\mathsf{maxAtInvoc}(${\tt k2}$)$ contains the push {\tt k1}, the latter is replaced by the immediate predecessors of {\tt k1} (according to $\mathsf{before}$) that are followed exclusively by pushes overlapping with {\tt k2}.
 %The transition rules which don't correspond to commit point actions are similar to those for $AbsQ$. The rule {\sc com-pop1} for $com(pop,d,k)$ is enabled only if there exists a push $k'$ which added value $d$ and which belongs to $be(k)$ or $ov(k)$. When enabled, the push $k'$ is removed from the set $O$ (and the order $<$) and for every other pop $k_1$ such that $k'$ belongs to $be(k_1)$, $k'$ is replaced in $be(k_1)$ by its predecessors which are followed exclusively by pushes overlapping with $k_1$ (these predecessors become maximal closed pushes once $k'$ is removed). Also, $rv(k)$ is set to $d$. The rule {\sc com-pop1} for $com(pop,{\tt EMPTY},k)$ is enabled only if $be(k)$ is empty (i.e., all the values added by pushes ending before $k$, if any, have been removed). Then, $rv(k)$ is set to ${\tt EMPTY}$.
 
-The abstract state machine in Fig.~\ref{fig:transitions:AbsS} defines an LTS over the alphabet $C\cup R\cup Com(pop)$. As in the case of $AbsQ$, we assume that the transition corresponding to the invocation, resp., the return, of a method, is done atomically with the fist, resp., the last, macro rule in its body. These transitions are labeled as expected with call and return actions (borrowing the operation identifier which occurs as argument of the macro rule), and the transitions corresponding to the rule {\tt com(pop,y,k)} are labeled by $com(pop,d,k)$.
-
+The abstract state machine in Fig.~\ref{fig:transitions:AbsS} defines an LTS over the alphabet $C\cup R\cup Com(pop)$. 
+%As in the case of $AbsQ$, we assume that the transition corresponding to the invocation, resp., the return, of a method, is done atomically with the fist, resp., the last, macro rule in its body. These transitions are labeled as expected with call and return actions (borrowing the operation identifier which occurs as argument of the macro rule), and the transitions corresponding to the rule {\tt com(pop,y,k)} are labeled by $com(pop,d,k)$.
 Let $AbsS_0$ be the standard abstract implementation of a stack where elements are stored in a sequence, push and pop operations adding and removing an element from the beginning of the sequence in one atomic step, respectively. For $\<Methods>=\{push,pop\}$, the alphabet of $AbsS_0$ is $C\cup R\cup Lin$.
 The following result states that the library $AbsS$ has exactly the same set of histories as $AbsS_0$.
 
-\vspace{-2mm}
+\vspace{-1mm}
 \begin{theorem}\label{th:absImplStack}
 $AbsS$ is a refinement of $AbsS_0$ and vice-versa.
-\vspace{-2mm}
+\vspace{-1mm}
 \end{theorem}
 
 A trace of a stack implementation is called \emph{$Com(pop)$-complete} when every completed pop has a commit point, i.e., each return $ret(pop,d,k)$ is preceded by an action $com(pop,d,k)$. A stack implementation $L$ over $\Sigma$, such that $C\cup R\cup Com(pop)\subseteq \Sigma$, is called \emph{with fixed pop commit points} when every trace $@t\in Tr(L)$ is $Com(pop)$-complete.
 
 %TODO NEEDS DATA INDEPENDENCE FOR THE COMMIT POINT TRANSITIONS TO BE DETERMINISTIC
 
-As a consequence of Theorem~\ref{th:forSim}, $C\cup R\cup Com(pop)$-forward simulations are a sound and complete proof method for showing the correctness of a stack implementation with fixed pop commit points (up to the correctness of the commit points). 
+As a consequence of Theorem~\ref{th:forSim}, $C\cup R\cup Com(pop)$-forward simulations are a sound and complete proof method for showing the correctness of a stack implementation with fixed pop commit points (up to the correctness of the commit points).
 
 %TODO EXPLAIN THAT THIS IS DIFFERENT W.R.T. QUEUES ($Abs_0$ doesn't have commit points).
 
-\vspace{-1.5mm}
+\vspace{-1mm}
 \begin{corollary}
 A stack $L$ with fixed pop commit points is a $C\cup R\cup Com(pop)$-refinement of $AbsS$ if{f} there is a $C\cup R\cup Com(pop)$-forward simulation from $L$ to $AbsS$.
-\vspace{-1.5mm}
+\vspace{-1mm}
 \end{corollary}
 
 Linearization points can also be seen as commit points and thus the following holds.
 
-\vspace{-1.5mm}
+\vspace{-1mm}
 \begin{corollary}
 A stack implementation $L$ with fixed pop linearization points where transition labels $lin(pop,d,k)$ are substituted with $com(pop,d,k)$ is a $C\cup R\cup Com(pop)$-refinement of $AbsS_0$ if{f} there is a $C\cup R\cup Com(pop)$-forward simulation from $L$ to $AbsS$.
-\vspace{-1.5mm}
+\vspace{-1mm}
 \end{corollary}
 
 
-\vspace{-6mm}
+\vspace{-2.5mm}
 \subsection{A Correctness Proof For Time-Stamped Stack}\label{sec:corr_tss}
-\vspace{-1mm}
-We describe a forward simulation $\mathit{fs}_2$ from $\mathit{TSS}$ to $AbsS$. Except for the constraints on the components $be$ and $ov$ of a $AbsS$ state, it is similar to the simulation $\mathit{fs}_1$ from $\mathit{HWQ}$ to $AbsQ$. Thus, the $AbsS$ states $t=\tup{O,<,\ell,rv,cp,be,ov}$ associated by $\mathit{fs}_2$ to a $\mathit{TSS}$ state $s$ satisfy the following. The set $O$ consists of all the identifiers of pushes in $s$ which haven't added yet a node to {\tt pools} or for which the input is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). A push $k$ is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by $(d,{\tt COMP})$, otherwise. 
+%\vspace{-1mm}
+We describe a forward simulation $F_2$ from $\mathit{TSS}$ to $AbsS$, which is similar to the one from $\mathit{HWQ}$ to $AbsQ$ for the components of an $AbsS$ state which exist also in $AbsQ$ (i.e., different from $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$).
+% Except for the constraints on the components $be$ and $ov$ of a $AbsS$ state, it is similar to the simulation $\mathit{fs}_1$ from $\mathit{HWQ}$ to $AbsQ$. Thus, the $AbsS$ states $t=\tup{O,<,\ell,rv,cp,be,ov}$ associated by $\mathit{fs}_2$ to a $\mathit{TSS}$ state $s$ satisfy the following. The set $O$ consists of all the identifiers of pushes in $s$ which haven't added yet a node to {\tt pools} or for which the input is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). A push $k$ is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by $(d,{\tt COMP})$, otherwise.
 
-To describe the order relation $<$ we consider the following notations: ${\tt ts}_s(k)$, resp., ${\tt TID}_s(k)$, denotes the timestamp of the node created by the push $k$ in state $s$ (the {\tt ts} field of this node), resp., the id of the thread executing $k$. By an abuse of terminology, we call ${\tt ts}_s(k)$ the timestamp of $k$ in state $s$.
+Thus, a $\mathit{TSS}$ state $s$ is related by $F_2$ to $AbsS$ states $t$ where $\mathsf{present}(k)$ is true for every push operation $k$ in $s$ such that $k$ has not yet added a node to {\tt pools} or its node is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). Also, $\mathsf{pending}(k)$ is true in $t$ iff $k$ is pending in $s$. 
+%Except for the constraints on the components $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$ of a $AbsS$ state, it is similar to the simulation $F_1$ from $\mathit{HWQ}$ to $AbsQ$. Thus, the $AbsS$ states $t=\tup{O,<,\ell,rv,cp,\mathsf{maxAtInvoc},\mathsf{overlap}}$ associated by $F_2$ to a $\mathit{TSS}$ state $s$ satisfy the following. The set $O$ consists of all the identifiers of pushes in $s$ which haven't added yet a node to {\tt pools} or for which the input is still present in {\tt pools} (i.e., the node created by the push has {\tt taken} set to {\tt false}). A push $k$ is labeled by $(d,{\tt PEND})$ where $d$ is the input value if it's pending and by $(d,{\tt COMP})$, otherwise. 
+
+To describe the constraints on the order relation $\mathsf{before}$ and the sets $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$ in $t$, we consider the following notations: ${\tt ts}_s(k)$, resp., ${\tt TID}_s(k)$, denotes the timestamp of the node created by the push $k$ in state $s$ (the {\tt ts} field of this node), resp., the id of the thread executing $k$. By an abuse of terminology, we call ${\tt ts}_s(k)$ the timestamp of $k$ in state $s$.
 Also, $k \leadsto_s k'$ when intuitively, a traversal of {\tt pools}  would encounter the node created by $k$ before the one created by $k'$. More precisely, $k \leadsto_s k'$ when ${\tt TID}_s(k) < {\tt TID}_s(k')$, or ${\tt TID}_s(k) = {\tt TID}_s(k')$ and the node created by $k'$ is reachable from the one created by $k$ in the list pointed to by ${\tt pools}[{\tt TID}_s(k)]$.
-The order relation $<$ satisfies the following: (1) pending pushes are maximal, (2) $<$ is consistent with the order between node timestamps, i.e., ${\tt ts}_s(k) \leq {\tt ts}_s(k')$ implies $k'\not< k$, and (3) $<$ includes the order between pushes executed in the same thread, i.e., ${\tt TID}_s(k) = {\tt TID}_s(k')$ and ${\tt ts}_s(k) < {\tt ts}_s(k')$ implies $k < k'$.
 
-The components $be$ and $ov$ satisfy the following constraints (their domain is the set of identifiers of pending pops):
-\vspace{-2mm}
-\begin{itemize}
-	\item a pop $k$ with ${\tt youngest}\neq {\tt null}$ that reached a node with timestamp $\tau$ (its variable {\tt n} points to this node) overlaps with every push that created a node with a timestamp bigger than $\tau$ and which occurs in {\tt pools} before the node reached by $k$, i.e., ${\tt youngest}_s(k)\neq{\tt null}$, ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, ${\tt n}_s(k_2)\text{\tt ->taken}={\tt false}$, and ${\tt ts}_s(k_2) \geq {\tt ts}_s(k_1)$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
-	\item a pop $k$ with ${\tt youngest}={\tt null}$ overlaps with every push that created a node which occurs in {\tt pools} before the node reached by $k$,
-i.e., ${\tt youngest}_s(k)={\tt null}$, ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, and ${\tt n}_s(k_2)\text{\tt ->taken}={\tt false}$ implies $k_2\in ov(k)$, for each $k, k_1, k_2$
-	\item if the variable {\tt youngest} of a pop $k$ points to a node which is not taken, then this node was created by a push in $be(k)\cup ov(k)$ or the node currently reached by $k$ is followed in {\tt pools} by another node which was created by a push in $be(k)\cup ov(k)$, i.e., ${\tt youngest}_s(k)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(k)={\tt n}_s(k_2)$ implies $k_1\in be(k)\cup ov(k)$ or that there exists $k_3\in O$ such that ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, $k_3\in be(k)\cup ov(k)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and $k$ is traversing the last list in the array {\tt pools}, for each $k, k_1,k_2$
+The order relation $\mathsf{before}$ satisfies the following: (1) pending pushes are maximal, (2) $\mathsf{before}$ is consistent with the order between node timestamps, i.e., ${\tt ts}_s(k) \leq {\tt ts}_s(k')$ implies $\neg \mathsf{before}(k',k)$, and (3) $\mathsf{before}$ includes the order between pushes executed in the same thread, i.e., ${\tt TID}_s(k) = {\tt TID}_s(k')$ and ${\tt ts}_s(k) < {\tt ts}_s(k')$ implies $\mathsf{before}(k, k')$.
+
+The components $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$ satisfy the following constraints (their domain is the set of identifiers of pending pops):
+\vspace{-1mm}
+\begin{description}
+\item[\emph{Frontiers}:] By the definition of $TSS$, a pending pop $p$ in $s$ could, in the future, remove the value added by a push $k$ which is maximal (w.r.t. $\mathsf{before}$) or a push $k$ which is completed but followed only by pending pushes (in the order relation $\mathsf{before}$). Therefore, for all pop operations $p$ which are pending in $s$, we have that $k \in \mathsf{overlap}(p) \cup \mathsf{maxAtInvoc}(p)$, for every push $k$ such that $\mathsf{present}(k) \land (\mathsf{pending}(k) \lor (\forall k'. \mathsf{present}(k') \land \mathsf{before}(k,k') \rightarrow \mathsf{pending}(k'))$.
+%Every maximal push $k$ or completed push  (maximal or all successors are pending) push $k$ can be removed by . Formally, the 
+%push $k$ such that $\mathsf{present}(k) \land (\mathsf{pending}(k) \lor (\forall k'. \mathsf{present}(k') \land \mathsf{before}(k,k') \rightarrow \mathsf{pending}(k'))$. Then, for all pending pop operations $p$, $k \in \mathsf{overlap}(p) \cup \mathsf{maxAtInvoc}(p)$.
+	\item[\emph{TraverseBefore}:] a pop $p$ with ${\tt youngest}(p)\neq {\tt null}$ that reached the node ${\tt n}$ overlaps with every present push that created a node with a timestamp greater than ${\tt youngest}(p){\tt ->ts}$ and which occurs in  {\tt pools} before the node $n$. Formally, if ${\tt youngest}_s(p)= {\tt n}_s(k) \neq{\tt null}$, ${\tt n}_s(p)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, $\mathsf{present}(k_2)$, and ${\tt ts}_s(k_2) \geq {\tt ts}_s(k)$, then $k_2\in \mathsf{overlap}(p)$, for each $p, k_1, k_2$.
+	%with timestamp $\tau$ (its variable {\tt n} points to this node) overlaps with every push that created a node with a timestamp bigger than $\tau$ and which occurs in {\tt pools} before the node reached by $k$, i.e., ${\tt youngest}_s(k)\neq{\tt null}$, ${\tt n}_s(k)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, ${\tt n}_s(k_2)\text{\tt ->taken}={\tt false}$, and ${\tt ts}_s(k_2) \geq {\tt ts}_s(k_1)$ implies $k_2\in \mathsf{overlap}(k)$, for each $k, k_1, k_2$
+	\item[\emph{TraverseBeforeNull}:] a pop $p$ with ${\tt youngest}(p)={\tt null}$ overlaps with every push that created a node which occurs in {\tt pools} before the node reached by $p$,
+i.e., ${\tt youngest}_s(p)={\tt null}$, ${\tt n}_s(p)={\tt n}_s(k_1)$, $k_2\leadsto_s k_1$, and $\mathsf{present}(k_2)$ implies $k_2\in \mathsf{overlap}(p)$, for each $p, k_1, k_2$.
+	\item[\emph{TraverseAfter}:] if the variable {\tt youngest} of a pop $p$ points to a node which is not taken, then this node was created by a push in $\mathsf{maxAtInvoc}(p)\cup \mathsf{overlap}(p)$ or the node currently reached by $p$ is followed in {\tt pools} by another node which was created by a push in $\mathsf{maxAtInvoc}(p)\cup \mathsf{overlap}(p)$. Formally,  for each $p, k_1,k_2$, if ${\tt youngest}_s(p)={\tt n}_s(k_1)$, ${\tt n}_s(k_1)\text{{\tt ->taken}}={\tt false}$, and ${\tt n}_s(p)={\tt n}_s(k_2)$, then one of the following holds:
+	\begin{itemize}
+		\item $k_1\in \mathsf{maxAtInvoc}(p)\cup \mathsf{overlap}(p)$, or 
+		\item there exists a push $k_3$ in $s$ such that $\mathsf{present}(k_3)$, $k_3\in \mathsf{maxAtInvoc}(p)\cup \mathsf{overlap}(p)$, ${\tt ts}_s(k_3) > {\tt ts}_s(k_1)$, and either $k_2\leadsto_s k_3$ or ${\tt n}_s(k_2)={\tt n}_s(k_3)$ and $p$ is at a control point before the assignment statement that changes the variable ${\tt youngest}$.
+	\end{itemize}
 %	
+
 %	\item every pop overlaps with all pending pushes, i.e., $k_1\in O$ is pending implies $k_1\in ov(k)$ for each $k, k_1$
 %	\item the greatest completed pushes in $<$ are either overlapping with a pop $k$ or they were the greatest completed pushes when $k$ started, i.e., every such push belongs either to $be(k)$ or $ov(k)$ for each $k$
 %	\item for every push that overlaps with a pop $k$ or was maximal in $<$ when $k$ started, its successors are overlapping with $k$, i.e., $k_1\in be(k)\cup ov(k)$ and $k_1 < k_2$ implies $k_2 \in ov(k)$ for each $k, k_1, k_2$
 %	\item $be(k)$ and $ov(k)$ don't contain predecessors of pushes from $be(k)$, i.e., $k_1 < k_2$ and $k_2 \in be(k)$ implies $k_1\not\in be(k)\cup ov(k)$ for each $k, k_1, k_2$
-%	\item if all immediate successors of a given push $k_1$ are overlapping with a pop $k$, then $k_1$ is either overlapping with $k$ or it was a greatest completed push when $k$ started, 
+%	\item if all immediate successors of a given push $k_1$ are overlapping with a pop $k$, then $k_1$ is either overlapping with $k$ or it was a greatest completed push when $k$ started,
 %	if $k_2\in ov(k)$, for every $k_2$ s.t. $k_1 \in pred_{<}(k_2)$, then $k_1\in be(k)\cup ov(k)$ for each $k,k_1$
 \vspace{-2mm}
-\end{itemize}
-There are some more constraints on $be$ and $ov$ that can be seen as invariants of $AbsS$, i.e., $be(k)$ and $ov(k)$ don't contain predecessors of pushes from $be(k)$ (for each $k, k_1, k_2$, $k_1 < k_2$ and $k_2 \in be(k)$ implies $k_1\not\in be(k)\cup ov(k)$). They can be found in Appendix~\ref{app:tss}.
+\end{description}
+%There are some more constraints on 
+The functions $\mathsf{maxAtInvoc}$ and $\mathsf{overlap}$ satisfy more constraints which can be seen as invariants of $AbsS$, e.g., $\mathsf{maxAtInvoc}(p)$ and $\mathsf{overlap}(p)$ do not contain predecessors of pushes from $\mathsf{maxAtInvoc}(p)$ (for each $p, k_1, k_2$, $\mathsf{before}(k_1, k_2)$ and $k_2 \in \mathsf{maxAtInvoc}(p)$ implies $k_1\not\in \mathsf{maxAtInvoc}(p)\cup \mathsf{overlap}(p)$). They can be found in~\cite{extended}.
 
-Finally, for every pop operation $k$ such that ${\tt success}(k)={\tt true}$, we have that $rv(k)={\tt youngest}(k)\text{\tt->data}$. 
+%The rationale behind the construction of $F_2$ has some similarities with $F_1$ that relates $\mathit{HWQ}$ and $AbsQ$. As in $F_1$, operation identifiers of pending push operations should be maximal in the related $\mathit{TSS}$ states. This is ensured by labeling them as $\mathsf{pending}$ in the related $AbsS$ states as in $F_1$. 
 
-The proof that $\mathit{fs}_2$ is indeed a forward simulation from $\mathit{TSS}$ to $AbsS$ follows the same lines as the one given for the Herlihy\&Wing Queue. It can be found in Appendix~\ref{app:tss}.
+Note that $F_2$ cannot satisfy the reverse of {\bf \emph{Frontiers}}, i.e., every push in $\mathsf{overlap}(p) \cup \mathsf{maxAtInvoc}(p)$, for some $p$, is maximal or followed only by pending pushes (w.r.t., $\mathsf{before}$). This is because 
+%The dual condition of ensuring maximal-closedness of remove candidate push operations is not valid for $F_2$, since 
+the linearization points of pop operations are not fixed and they can occur anywhere in between their invocation and commit points. Hence, any push operation which was maximal or followed only by pending pushes in the happens-before 
+%that is maximally-closed 
+in between the invocation and the commit 
+can be removed by a pop. And such a push may no longer satisfy the same properties in the state $s$. 
 
+Based on the values stored in $youngest_s(p)$ and $n_s(p)$, for some pop $p$, %which give the current youngest element $p$ has seen and the current element $p$ is visiting, 
+the other three constraints identify other push operations that overlap with $p$, or they were followed only by pending pushes when $p$ was invoked. 
+% and they might not be maximally-closed in the current state. Unfortunately, $\mathit{TSS}$ does not keep history of pop operations in the state and we cannot infer all the push operations that are concurrent or maximally closed with respect to a given pop operation from the state information.
+%Nevertheless, we can obtain partial information from the state that is enough for showing once-maximality of a push that is removed by commit action of a pop. First, the push operations tht are maximally-closed in the current state are remove candidates by all pending pops since a pending pop operation may linearize at this point. This restriction is described by the \emph{Frontiers} condition. 
+%To obtain further information on $\mathsf{overlap}$ and $\mathsf{maxAtInvoc}$ sets of a pending pop $p$ in state $s$, we look at  which show the current youngest element $p$ has seen and the current element $p$ is visiting, respectively. 
+{\bf \emph{TraverseBefore}} and {\bf \emph{TraverseBeforeNull}} state that pushes which add new nodes to the pools seen by $p$ in the past,  are overlapping with $p$. {\bf \emph{TraverseAfter}} states that either the push adding the current youngest node $youngest_s(p)$ is in $\mathsf{overlap}_s(p) \cup \mathsf{maxAtInvoc}_s(p)$, or there is a node that $p$ will visit in the future which is in $\mathsf{overlap}_s(p) \cup \mathsf{maxAtInvoc}_s(p)$. 
 
+%Combining \emph{TraverseBefore} and \emph{TraverseAfter} restrictions we make sure that when a new node $n_s(p)$ is visited, then either $youngest_s(p)$ was maximal or followed only by pending pushes before new nodes that precede $n_s(p)$ in the traverse order were added, or there is a successor node of $n_s(p)$ in the traverse order that is maximal or followed only by pending pushes. Hence, when a pop $p$ finishes its traversal of the pools with a non-null and present $youngest$ node, this node is guaranteed to be once-maximal between invocation and commit points of $p$.
 
-
-
-
-
+The proof that $F_2$ is indeed a forward simulation from $\mathit{TSS}$ to $AbsS$ follows the same lines as the one given for the Herlihy\&Wing Queue. It can be found in \cite{extended}.
 

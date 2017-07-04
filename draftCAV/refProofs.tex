@@ -1,7 +1,7 @@
 %!TEX root = draft.tex
-\vspace{-3.5mm}
+\vspace{-1mm}
 \section{Refinement Proofs}
-\vspace{-1.5mm}
+%\vspace{-1.5mm}
 Library refinement is an instance of a more general notion of refinement between LTSs,
 which for some alphabet $\Gamma$ of \emph{observable actions} is defined as the inclusion of sets of 
 traces projected on $\Gamma$. Library refinement corresponds to the case $\Gamma=C\cup R$. 
@@ -68,31 +68,30 @@ A relation $F \subseteq Q_{1} \times Q_{2}$ is called a \emph{$\Gamma$-forward s
 \item For all $s,s'\in Q_1$, $e \in \Sigma_1\setminus \Gamma$, and $u\in Q_2$, such that $(s,e,s') \in \delta_1$ and $F(s,u)$, we have that there exists $u'\in Q_2$ such that $F(s',u')$ and $u \xrightarrow{\sigma} u'$ where $\sigma\in (\Sigma_2\setminus\Gamma)^*$.  
 %where $a = a_1, a_2, ..., a_n$ such that for all $i \in [1,n]$, $a_i \in \Sigma_{L_2} \backslash A\Sigma $. Moreover, $a$ could be the empty sequence.
 \end{itemize}
-\vspace{-3.5mm}
+\vspace{-2.5mm}
 \end{definition}
 %If $\mathit{fs}[s]$ is a unique state for all $s \in Q_1$ then $\mathit{fs}$ is called a refinement mapping/function. 
-A $\Gamma$-forward simulation requires that every step of $A_1$ corresponds to a sequence of steps of $A_2$. To imply $\Gamma$-refinement, every step of $A_1$ labeled by an observable action $\gamma\in \Gamma$ should be simulated by a sequence of steps of $A_2$ where exactly one transition is labeled by $\gamma$ and all the other transitions are labeled by non-observable actions.
-The dual notion of \emph{backward} simulation where steps are simulated backwards can be defined in a similar way.
+A $\Gamma$-forward simulation states that every step of $A_1$ is simulated by a sequence of steps of $A_2$. To imply $\Gamma$-refinement, every step of $A_1$ labeled by an observable action $\gamma\in \Gamma$ should be simulated by a sequence of steps of $A_2$ where exactly one transition is labeled by $\gamma$ and all the other transitions are labeled by non-observable actions.
+The dual notion of \emph{backward} simulation where steps are simulated backwards can be defined similarly.
 
 
 
 
 The following shows the soundness and the completeness of $\Gamma$-forward simulations (when $A_2$ is $\Gamma$-deterministic). It is an instantiation of previous results~~\cite{DBLP:journals/tcs/AbadiL91,DBLP:journals/iandc/LynchV95}.
 
-\vspace{-1.5mm}
+\vspace{-1mm}
 \begin{theorem}\label{th:forSim}
 %Let $L_1$ and $L_2$ be two libraries over alphabets $\Sigma_1$ and $\Sigma_2$, resp., such that $C\cup R \subseteq \Sigma_1\cap\Sigma_2$. Also, let $\Gamma$ be a set of actions such that $C\cup R\subseteq \Gamma\subseteq \Sigma_1\cap\Sigma_2$. 
-$A_1$ $\Gamma$-refines $A_2$ when there is a $\Gamma$-forward simulation from $A_1$ to $A_2$. Moreover, if $A_1$ $\Gamma$-refines $A_2$ and $A_2$ is $\Gamma$-deterministic, then there is a $\Gamma$-forward simulation from $A_1$ to $A_2$.
-\vspace{-1.5mm}
+If there is a $\Gamma$-forward simulation from $A_1$ to $A_2$, then $A_1$ $\Gamma$-refines $A_2$. Also, if $A_1$ $\Gamma$-refines $A_2$ and $A_2$ is $\Gamma$-deterministic, then there is a $\Gamma$-forward simulation from $A_1$ to $A_2$.
+\vspace{-1mm}
 \end{theorem}
 
 The linearization of a concurrent history can be also defined in terms of \emph{linearization points}. Informally, a linearization point of 
 an operation in an execution is a point in time where the operation is conceptually effectuated; given the linearization points of 
 each operation, the linearization of a concurrent history is the sequential history which takes operations in the order of their linearization points.
-For some libraries, the linearization points of all the invocations of a method $m$ correspond to the execution of a fixed statement in $m$'s body. For instance, in the case of atomic libraries  
-where method bodies are guarded with a global-lock acquisition, the linearization point of every method invocation corresponds to the execution 
+For some libraries, the linearization points of all the invocations of a method $m$ correspond to the execution of a fixed statement in $m$'s body. For instance, when method bodies are guarded with a global-lock acquisition, the linearization point of every method invocation corresponds to the execution 
 of the body. When the linearization points are fixed, we assume that the library is an LTS over an alphabet that includes actions 
-$lin(m,d,k)$ with $m\in\<Methods>$, $d\in\<Vals>$ and $k\in \<Ops>$. The action $lin(m,d,k)$ represents the linearization point of the operation $k$ 
+$lin(m,d,k)$ with $m\in\<Methods>$, $d\in\<Vals>$ and $k\in \<Ops>$, representing the linearization point of the operation $k$ 
 %which is an invocation of method $m$ 
 returning value $d$.
 Let $Lin$ denote the set of such actions. 

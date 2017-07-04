@@ -1,6 +1,7 @@
 %!TEX root = draft.tex
+\vspace{-1mm}
 \section{Preliminaries}
-\vspace{-2mm}
+
 We formalize several abstraction relations between libraries using a simple
 yet universal model of computation, namely labeled transition systems (LTS).
 This model captures shared-memory programs with an arbitrary number of threads,
@@ -26,9 +27,9 @@ one state $s'$ such that $s\xrightarrow{@t}s'$. More generally, for an alphabet 
 an LTS is \emph{$\Gamma$-deterministic} if for any state s and any sequence $@t\in \Gamma^*$, there
 is at most one state $s'$ such that $s\xrightarrow{@t'}s'$ and $@t$ is a subsequence of $@t'$.
 
-\vspace{-3.5mm}
+\vspace{-2.5mm}
 \subsection{Libraries}
-\vspace{-1.5mm}
+%\vspace{-1.5mm}
 Programs interact with libraries by calling named library \emph{methods}, which
 receive \emph{arguments} and yield \emph{return values} upon completion.
 We fix arbitrary sets $\<Methods>$ and $\<Vals>$ of method names and
@@ -228,9 +229,9 @@ A library $L$ is called a \emph{queue implementation} when $\<Methods>=\{enq,deq
 %
 %Since libraries are LTSs, they produce traces. A trace $e = e_1, e_2, ..., e_n$ of library $L$ is \emph{well-formed} iff (i) every return matches an earlier invocation: $e_j = ret(m,d,k)$ implies that there exists $i<j$ such that $e_i = inv(m,d',k)$ and (ii) every operation identifier is used at most one invocation/return pair: $oid(e_i) = oid(e_j) = k$ and $i<j$ implies $e_i = inv(m,d,k)$ and $e_j = ret(m,d',k)$. From now on, we assume that libraries produce well-formed traces. Let $f: \mathbb{N} \rightarrow \mathbb(N)$ be a bijection. Then, traces $e$ and $e'$ are equivalent if $e'$ is obtained from $e$ by replacing every action $inv(m,d,k)$ with $inv(m,d,f(k))$ and every action $ret(m,d,k)$ with $ret(m,d,f(k))$. 
 
-\vspace{-3.5mm}
+\vspace{-2.5mm}
 \subsection{Refinement and Linearizability}
-\vspace{-1.5mm}
+%\vspace{-1.5mm}
 %\textcolor{red}{A general organizational idea for  this subsection: Linearizability is defined in terms of weakening in which observational actions are just call and return events. Then, we put forward the idea of enriching $\Gamma$ by adding new actions. In the current organization, linearizability is defined after refinement before which this $\Gamma$ extension argument is explained. Hence, people may confuse that notion of linearizability is based on $\Gamma$ set we picked. I propose to first introduce linearizability. Then explain refinement and give Theorem 1.}
 Conformance of a library $L_1$ to a specification given as an ``abstract'' library $L_2$ 
 is formally captured by \emph{(observational) refinement}. Informally, 

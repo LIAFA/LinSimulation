@@ -1,6 +1,7 @@
 %!TEX root = draft.tex
-\section{Introduction}
 \vspace{-1mm}
+\section{Introduction}
+
 Programming efficient concurrent implementations of atomic collections, e.g., stacks and queues, is error prone. To minimize synchronization overhead between concurrent method invocations, implementors avoid blocking operations like lock acquisition, allowing methods to execute concurrently. However, concurrency risks unintended inter-operation interference, and risks conformance to atomic reference implementations. Conformance is formally captured by \emph{(observational) refinement}, which assures that all behaviors of programs
 using these efficient implementations would also be possible were the atomic reference implementations used instead.
 
